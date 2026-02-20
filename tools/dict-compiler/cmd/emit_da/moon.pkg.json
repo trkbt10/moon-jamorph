@@ -1,0 +1,16 @@
+{
+  "is-main": true,
+  "import": [
+    {
+      "path": "username/micado_mbt/tools/dict-compiler",
+      "alias": "compiler"
+    },
+    "moonbitlang/core/env",
+    "moonbitlang/core/buffer",
+    "moonbitlang/core/encoding/utf8"
+  ],
+  "targets": {
+    "main.mbt": ["native", "llvm"],
+    "main_stub.mbt": ["wasm", "wasm-gc", "js"]
+  }
+}

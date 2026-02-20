@@ -1,0 +1,46 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "username/micado_mbt/src/tokenizer"
+
+import {
+  "username/micado_mbt/src/types",
+}
+
+// Values
+pub const EDITION_FULL : Int = 3
+
+pub const EDITION_MINI : Int = 1
+
+pub const EDITION_NANO : Int = 0
+
+pub const EDITION_STANDARD : Int = 2
+
+pub const MODE_NORMAL : Int = 0
+
+pub const MODE_SEARCH : Int = 1
+
+pub fn tokenize(String) -> Array[@types.Morpheme]
+
+pub fn tokenize_utf8(BytesView) -> Array[@types.Morpheme]
+
+// Errors
+
+// Types and methods
+pub struct Tokenizer {
+  edition : Int
+  mode : Int
+  use_lexmatch_scanner : Bool
+}
+pub fn Tokenizer::new() -> Self
+pub fn Tokenizer::set_edition(Self, Int) -> Self
+pub fn Tokenizer::set_mode(Self, Int) -> Self
+pub fn Tokenizer::set_use_lexmatch_scanner(Self, Bool) -> Self
+pub fn Tokenizer::tokenize(Self, String) -> Array[@types.Morpheme]
+pub fn Tokenizer::tokenize_utf8(Self, BytesView) -> Array[@types.Morpheme]
+
+// Type aliases
+pub type Edition = Int
+
+pub type Mode = Int
+
+// Traits
+

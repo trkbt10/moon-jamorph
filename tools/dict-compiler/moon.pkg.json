@@ -1,0 +1,16 @@
+{
+  "import": [
+    {
+      "path": "username/micado_mbt/tools/dict-compiler/builder",
+      "alias": "builder"
+    },
+    {
+      "path": "username/micado_mbt/tools/dict-compiler/compressor",
+      "alias": "compressor"
+    },
+    {
+      "path": "username/micado_mbt/tools/dict-compiler/editions",
+      "alias": "editions"
+    }
+  ]
+}

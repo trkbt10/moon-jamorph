@@ -1,0 +1,12 @@
+{
+  "import": [
+    {
+      "path": "username/micado_mbt/src/types",
+      "alias": "types"
+    },
+    {
+      "path": "username/micado_mbt/src/core/da_trie",
+      "alias": "datrie"
+    }
+  ]
+}

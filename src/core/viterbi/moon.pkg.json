@@ -1,0 +1,17 @@
+{
+  "import": [
+    "moonbitlang/core/int",
+    {
+      "path": "username/micado_mbt/src/types",
+      "alias": "types"
+    },
+    {
+      "path": "username/micado_mbt/src/core/lattice",
+      "alias": "lattice"
+    },
+    {
+      "path": "username/micado_mbt/src/core/scorer",
+      "alias": "scorer"
+    }
+  ]
+}

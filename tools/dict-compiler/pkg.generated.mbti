@@ -1,0 +1,33 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "username/micado_mbt/tools/dict-compiler"
+
+// Values
+pub fn build_compact_id_mapping(Array[LexiconRow], Int) -> Array[Int]
+
+pub fn compile_tsv_to_da_trie_module_for_edition(String, String, String) -> String
+
+pub fn compile_tsv_to_entries_module(String, String) -> String
+
+pub fn compile_tsv_to_entries_module_for_edition(String, String, String) -> String
+
+pub fn emit_da_trie_module(String, Array[String]) -> String
+
+pub fn emit_extra_entries_module(String, Array[LexiconRow]) -> String
+
+pub fn parse_tsv_lexicon(String) -> Array[LexiconRow]
+
+// Errors
+
+// Types and methods
+pub(all) struct LexiconRow {
+  surface : String
+  pos_tag : String
+  left_id : Int
+  right_id : Int
+  word_cost : Int
+}
+
+// Type aliases
+
+// Traits
+

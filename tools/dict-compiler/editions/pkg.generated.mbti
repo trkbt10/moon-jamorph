@@ -1,0 +1,26 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "username/micado_mbt/tools/dict-compiler/editions"
+
+// Values
+pub const EDITION_FULL : String = "full"
+
+pub const EDITION_MINI : String = "mini"
+
+pub const EDITION_NANO : String = "nano"
+
+pub const EDITION_STANDARD : String = "standard"
+
+pub fn is_supported_pos_tag(String) -> Bool
+
+pub fn normalize_edition_name(String) -> String
+
+pub fn should_include_pos_tag(String, String) -> Bool
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

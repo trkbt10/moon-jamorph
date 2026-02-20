@@ -1,0 +1,26 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "username/micado_mbt/src/scanner/utf16"
+
+import {
+  "username/micado_mbt/src/types",
+}
+
+// Values
+pub fn classify_lexmatch(Char) -> @types.CharClass
+
+pub fn classify_manual(Char) -> @types.CharClass
+
+pub fn scan_char_classes_lexmatch(String) -> Array[@types.CharClass]
+
+pub fn scan_char_classes_manual(String) -> Array[@types.CharClass]
+
+pub fn scanner_modes_match(String) -> Bool
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

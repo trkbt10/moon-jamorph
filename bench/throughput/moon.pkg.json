@@ -1,0 +1,9 @@
+{
+  "import": [
+    "moonbitlang/core/bench",
+    {
+      "path": "username/micado_mbt/src/tokenizer",
+      "alias": "tok"
+    }
+  ]
+}

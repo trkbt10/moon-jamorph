@@ -1,0 +1,13 @@
+{
+  "is-main": true,
+  "import": [
+    {
+      "path": "username/micado_mbt/bench/lexmatch_vs_manual",
+      "alias": "bench0"
+    },
+    {
+      "path": "username/micado_mbt/bench/throughput",
+      "alias": "bench4"
+    }
+  ]
+}

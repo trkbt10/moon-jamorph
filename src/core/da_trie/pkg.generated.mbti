@@ -1,0 +1,27 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "username/micado_mbt/src/core/da_trie"
+
+import {
+  "username/micado_mbt/src/types",
+}
+
+// Values
+pub fn common_prefix_search(Array[Char], Int, ReadOnlyArray[@types.DictEntry], DATrie) -> Array[@types.TokenCandidate]
+
+pub fn from_generated_arrays(ReadOnlyArray[String], ReadOnlyArray[Int], ReadOnlyArray[Int], ReadOnlyArray[Int], ReadOnlyArray[Int]) -> DATrie
+
+// Errors
+
+// Types and methods
+pub struct DATrie {
+  char_table : Array[Char]
+  base : Array[Int]
+  check : Array[Int]
+  term_starts : Array[Int]
+  term_entry_indexes : Array[Int]
+}
+
+// Type aliases
+
+// Traits
+

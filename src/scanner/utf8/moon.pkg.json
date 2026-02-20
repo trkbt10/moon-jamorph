@@ -1,0 +1,12 @@
+{
+  "import": [
+    {
+      "path": "moonbitlang/core/encoding/utf8",
+      "alias": "enc8"
+    },
+    {
+      "path": "username/micado_mbt/src/types",
+      "alias": "types"
+    }
+  ]
+}

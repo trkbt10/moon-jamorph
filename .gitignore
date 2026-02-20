@@ -1,0 +1,16 @@
+.DS_Store
+_build/
+target/
+target
+.mooncakes/
+.moonagent/
+
+# docs
+*.md
+
+# external dictionary resources
+dic/
+tools/dict-compiler/.cache/
+
+# generated large dictionary sources
+src/dict/**/dict_*_generated.mbt
