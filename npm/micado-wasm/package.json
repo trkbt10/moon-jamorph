@@ -1,7 +1,7 @@
 {
-  "name": "@micado/wasm",
+  "name": "@moon-jamorph/wasm",
   "version": "0.1.0",
-  "description": "Micado tokenizer: wasm API + profile-selectable .dic.bin dictionaries",
+  "description": "moon-jamorph tokenizer: wasm API + profile-selectable .dic.bin dictionaries",
   "type": "module",
   "exports": {
     ".": "./index.mjs",
@@ -20,6 +20,7 @@
     "build:wasm": "../../tools/distribution/build_wasm_npm.sh",
     "test:node": "node ./demo/node-smoke.mjs",
     "test:dic": "node ./demo/node-dic-smoke.mjs",
+    "test:accuracy": "node ./demo/accuracy-cli.mjs",
     "preview:demo": "vite demo --host --open"
   },
   "devDependencies": {
