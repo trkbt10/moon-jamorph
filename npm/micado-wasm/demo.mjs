@@ -1,4 +1,4 @@
-import { createTokenizer, DICTIONARY_PROFILES } from "../index.mjs";
+import { createTokenizer, DICTIONARY_PROFILES } from "./index.mjs";
 import { AOZORA_EXAMPLES } from "./examples.mjs";
 
 const statusEl = document.querySelector("#status");
