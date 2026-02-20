@@ -4,17 +4,21 @@
   "description": "MoonBit Micado Japanese tokenizer (nano/mini editions) for WebAssembly",
   "type": "module",
   "exports": {
-    ".": "./index.mjs"
+    ".": "./index.mjs",
+    "./dic-bin": "./dic-bin.mjs"
   },
   "files": [
     "index.mjs",
+    "dic-bin.mjs",
     "dist/micado_wasm.wasm",
+    "dist/micado_web_small.dic.bin",
     "README.md",
     "demo"
   ],
   "scripts": {
     "build:wasm": "../../tools/distribution/build_wasm_npm.sh",
     "test:node": "node ./demo/node-smoke.mjs",
+    "test:dic": "node ./demo/node-dic-smoke.mjs",
     "preview:demo": "vite demo --host --open"
   },
   "devDependencies": {

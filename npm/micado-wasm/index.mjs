@@ -1,4 +1,7 @@
+import { createDicBinTokenizer, loadDicBin, parseDicBin } from "./dic-bin.mjs";
+
 const DEFAULT_WASM_URL = new URL("./dist/micado_wasm.wasm", import.meta.url);
+const DEFAULT_DIC_BIN_URL = new URL("./dist/micado_web_small.dic.bin", import.meta.url);
 
 async function loadWasmBinary(source) {
   if (source instanceof Uint8Array) {
@@ -94,4 +97,9 @@ export async function createMicadoWasm(options = {}) {
   return createTokenizerApi(instance.exports);
 }
 
-export { parseTokenTSV };
+export async function createWebSmallTokenizer(options = {}) {
+  const dic = await loadDicBin(options.dicURL ?? DEFAULT_DIC_BIN_URL);
+  return createDicBinTokenizer(dic);
+}
+
+export { parseTokenTSV, parseDicBin, loadDicBin, createDicBinTokenizer };
