@@ -4,6 +4,11 @@
     {
       "path": "username/micado_mbt/src/tokenizer",
       "alias": "tok"
-    }
+    },
+    {
+      "path": "username/micado_mbt/src/types",
+      "alias": "types"
+    },
+    "moonbitlang/core/env"
   ]
 }
