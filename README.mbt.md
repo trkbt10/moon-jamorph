@@ -46,6 +46,7 @@
 │   └── types
 ├── cmd/
 │   ├── main          (MeCab dicdir を使う CLI)
+│   ├── tokenize      (stdin を内部 tokenizer で処理する CLI)
 │   ├── ipadic_demo   (standard edition demo)
 │   ├── neologd_demo  (full edition demo)
 │   ├── wasm_api      (wasm 線形 ABI)
@@ -54,6 +55,7 @@
 │   ├── dict-compiler
 │   └── distribution
 ├── test/accuracy, test/regression
+├── bench/corpus
 ├── bench/lexmatch_vs_manual, bench/throughput
 └── npm/micado-wasm
 ```
@@ -105,6 +107,40 @@ moon run --target native cmd/main -- -d /path/to/mecab/dic -O json "太郎は走
 ```
 
 `cmd/main` では `--dicdir` が必須です。native/llvm 以外では stub 実装になります（`cmd/main/moon.pkg.json`, `mecab_runner_stub.mbt`）。
+
+内部 tokenizer を stdin から実行する CLI（`cmd/tokenize`）:
+
+```sh
+cat bench/corpus/aozora_openings.txt | moon run --target native cmd/tokenize -- -e full -O count
+```
+
+## 軽量ベンチ比較
+
+`tools/benchmark/quick_compare.sh` は `vibrato` の benchmark 出力形式に寄せて、
+`micado` と `mecab` の文数あたり処理時間を比較します。
+
+```sh
+tools/benchmark/quick_compare.sh \
+  --dicdir /opt/homebrew/lib/mecab/dic/unidic \
+  --edition full \
+  --runs 10 \
+  --trials 10 \
+  --copies 2000
+```
+
+出力例（形式）:
+
+```text
+[micado/full]
+Number_of_sentences: 2000
+Elapsed_seconds_to_tokenize_all_sentences: [min,avg,max] = [...]
+Sentences_per_second: [min,avg,max] = [...]
+
+[mecab/unidic]
+Number_of_sentences: 2000
+Elapsed_seconds_to_tokenize_all_sentences: [min,avg,max] = [...]
+Sentences_per_second: [min,avg,max] = [...]
+```
 
 ## 辞書生成
 

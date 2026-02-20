@@ -1,7 +1,7 @@
 {
-  "name": "@moon-jamorph/wasm",
+  "name": "@micado/wasm",
   "version": "0.1.0",
-  "description": "moon-jamorph tokenizer: wasm API + profile-selectable .dic.bin dictionaries",
+  "description": "micado tokenizer: wasm API + profile-selectable .dic.bin dictionaries",
   "type": "module",
   "exports": {
     ".": "./index.mjs",
