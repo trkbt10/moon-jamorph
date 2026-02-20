@@ -32,7 +32,7 @@ pub(all) struct LatticeNode {
   start_pos : Int
   end_pos : Int
   pos : POS
-  pos_detail : String
+  pos_detail_id : Int
   right_id : Int
   right_compact_id : Int
   best_cost : Int

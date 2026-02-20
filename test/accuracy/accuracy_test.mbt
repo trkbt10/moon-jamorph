@@ -122,3 +122,17 @@ test "accuracy: lexmatch mode should keep same segmentation on mixed sentence" {
   let b = lex.tokenize(text).map(t => t.surface)
   assert_eq(a, b)
 }
+
+///|
+test "accuracy: full should tokenize long mixed sentence with stable details" {
+  let tokenizer = @tok.Tokenizer::new().set_edition(@tok.EDITION_FULL)
+  let tokens = tokenizer.tokenize("#AirPods!!東京大学abc123🤣かなXYZ")
+  inspect(
+    tokens.map(t => t.surface),
+    content="[\"#AirPods\", \"!\", \"!\", \"東京\", \"大学\", \"abc\", \"123\", \"🤣\", \"かな\", \"XYZ\"]",
+  )
+  inspect(
+    tokens.map(t => t.pos_detail),
+    content="[\"名詞,固有名詞,一般,*\", \"未知語,記号,*,*\", \"未知語,記号,*,*\", \"名詞,固有名詞,地域,一般\", \"名詞,一般,*,*\", \"名詞,固有名詞,未知語,*\", \"名詞,数,*,*\", \"未知語,その他,*,*\", \"未知語,ひらがな,*,*\", \"名詞,固有名詞,未知語,*\"]",
+  )
+}

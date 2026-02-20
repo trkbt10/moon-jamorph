@@ -134,6 +134,32 @@ test "lexmatch scanner should match manual on utf8 mixed boundaries" {
 }
 
 ///|
+test "lexmatch scanner should match manual on long mixed utf16 boundaries" {
+  let manual = @tok.Tokenizer::new().set_edition(@tok.EDITION_FULL)
+  let lex = @tok.Tokenizer::new()
+    .set_edition(@tok.EDITION_FULL)
+    .set_use_lexmatch_scanner(true)
+  let text = "#AirPods!!東京大学abc123🤣かなXYZ"
+  let m = manual.tokenize(text)
+  let l = lex.tokenize(text)
+  assert_eq(l.map(t => t.surface), m.map(t => t.surface))
+  assert_eq(l.map(t => t.pos_detail), m.map(t => t.pos_detail))
+}
+
+///|
+test "lexmatch scanner should match manual on long mixed utf8 boundaries" {
+  let manual = @tok.Tokenizer::new().set_edition(@tok.EDITION_FULL)
+  let lex = @tok.Tokenizer::new()
+    .set_edition(@tok.EDITION_FULL)
+    .set_use_lexmatch_scanner(true)
+  let bytes = @utf8.encode("#AirPods!!東京大学abc123🤣かなXYZ"[:])
+  let m = manual.tokenize_utf8(bytes[:])
+  let l = lex.tokenize_utf8(bytes[:])
+  assert_eq(l.map(t => t.surface), m.map(t => t.surface))
+  assert_eq(l.map(t => t.pos_detail), m.map(t => t.pos_detail))
+}
+
+///|
 test "edition should change dictionary coverage" {
   let nano = @tok.Tokenizer::new().set_edition(@tok.EDITION_NANO)
   let mini = @tok.Tokenizer::new().set_edition(@tok.EDITION_MINI)
