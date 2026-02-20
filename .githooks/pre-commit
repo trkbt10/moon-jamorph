@@ -1,3 +1,4 @@
 #!/bin/sh
 
+tools/distribution/check_no_tmp_moonpkg.sh
 moon check
