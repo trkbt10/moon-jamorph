@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { readFile, writeFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
+import { resolve } from "node:path";
 
 const HELP = `usage: node tools/dict-compiler/scripts/build_web_dic_bin.mjs <input.tsv> <output.dic.bin> [--limit N]\n`;
 
@@ -11,6 +11,7 @@ function parseArgs(argv) {
   const inputPath = resolve(argv[0]);
   const outputPath = resolve(argv[1]);
   let limit = Number.POSITIVE_INFINITY;
+  let freqPath = null;
   for (let i = 2; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === "--limit") {
@@ -21,12 +22,20 @@ function parseArgs(argv) {
       i += 1;
       continue;
     }
+    if (arg === "--freq-tsv") {
+      if (i + 1 >= argv.length) {
+        throw new Error("--freq-tsv requires a value");
+      }
+      freqPath = resolve(argv[i + 1]);
+      i += 1;
+      continue;
+    }
     throw new Error(`unknown option: ${arg}`);
   }
   if (!Number.isFinite(limit) || limit <= 0) {
     throw new Error(`invalid --limit: ${limit}`);
   }
-  return { inputPath, outputPath, limit };
+  return { inputPath, outputPath, limit, freqPath };
 }
 
 function safeCol(cols, index, fallback = "*") {
@@ -81,7 +90,43 @@ function buildFeature(cols) {
   return "未知語,*,*,*,*,*,*,*,*";
 }
 
-function parseRows(tsvText, limit) {
+function parseWordCost(cols) {
+  if (cols.length >= 14) {
+    const v = Number.parseInt(cols[4], 10);
+    return Number.isFinite(v) ? v : 32767;
+  }
+  if (cols.length >= 13) {
+    const v = Number.parseInt(cols[3], 10);
+    return Number.isFinite(v) ? v : 32767;
+  }
+  if (cols.length >= 4) {
+    const v = Number.parseInt(cols[3], 10);
+    return Number.isFinite(v) ? v : 32767;
+  }
+  return 32767;
+}
+
+function parseFreqTSV(text) {
+  const map = new Map();
+  for (const line of text.split(/\r?\n/)) {
+    if (!line || line.startsWith("#")) {
+      continue;
+    }
+    const cols = line.split("\t");
+    if (cols.length < 2) {
+      continue;
+    }
+    const surface = cols[0];
+    const n = Number.parseInt(cols[1], 10);
+    if (!surface || !Number.isFinite(n) || n <= 0) {
+      continue;
+    }
+    map.set(surface, n);
+  }
+  return map;
+}
+
+function parseRows(tsvText, limit, freqMap) {
   const dedup = new Map();
   const lines = tsvText.split(/\r?\n/);
   for (const line of lines) {
@@ -93,19 +138,41 @@ function parseRows(tsvText, limit) {
       continue;
     }
     const surface = cols[0];
-    if (!surface || dedup.has(surface)) {
+    if (!surface) {
       continue;
     }
-    dedup.set(surface, buildFeature(cols));
-    if (dedup.size >= limit) {
-      break;
+    const feature = buildFeature(cols);
+    const wordCost = parseWordCost(cols);
+    const existing = dedup.get(surface);
+    if (!existing || wordCost < existing.wordCost) {
+      dedup.set(surface, {
+        surface,
+        feature,
+        wordCost,
+        freq: freqMap?.get(surface) ?? 0,
+      });
     }
   }
-  const rows = [];
-  for (const [surface, feature] of dedup.entries()) {
-    rows.push({ surface, feature });
-  }
-  return rows;
+  const ranked = Array.from(dedup.values());
+  ranked.sort((a, b) => {
+    if (a.freq !== b.freq) {
+      return b.freq - a.freq;
+    }
+    if (a.wordCost !== b.wordCost) {
+      return a.wordCost - b.wordCost;
+    }
+    if (a.surface.length !== b.surface.length) {
+      return b.surface.length - a.surface.length;
+    }
+    if (a.surface < b.surface) {
+      return -1;
+    }
+    if (a.surface > b.surface) {
+      return 1;
+    }
+    return 0;
+  });
+  return ranked.slice(0, limit).map((r) => ({ surface: r.surface, feature: r.feature }));
 }
 
 function encodeBin(rows) {
@@ -168,15 +235,17 @@ function encodeBin(rows) {
 }
 
 async function main() {
-  const { inputPath, outputPath, limit } = parseArgs(process.argv.slice(2));
+  const { inputPath, outputPath, limit, freqPath } = parseArgs(process.argv.slice(2));
   const tsvText = await readFile(inputPath, "utf8");
-  const rows = parseRows(tsvText, limit);
+  const freqMap = freqPath ? parseFreqTSV(await readFile(freqPath, "utf8")) : null;
+  const rows = parseRows(tsvText, limit, freqMap);
   const bin = encodeBin(rows);
   await writeFile(outputPath, bin);
 
   const kb = (bin.byteLength / 1024).toFixed(1);
+  const freqInfo = freqPath ? ` freq=${freqPath}` : "";
   console.log(
-    `[web-dic-bin] entries=${rows.length} bytes=${bin.byteLength} (${kb}KB) out=${outputPath}`,
+    `[web-dic-bin] entries=${rows.length} bytes=${bin.byteLength} (${kb}KB) out=${outputPath}${freqInfo}`,
   );
 }
 

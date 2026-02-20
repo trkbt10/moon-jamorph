@@ -95,7 +95,7 @@ export async function createMicadoWasm(options = {}) {
 }
 
 function normalizeProfile(profile) {
-  const value = String(profile ?? "medium").toLowerCase();
+  const value = String(profile ?? "full").toLowerCase();
   if (!DICTIONARY_PROFILES.includes(value)) {
     throw new Error(
       `unknown dictionary profile: ${profile} (expected ${DICTIONARY_PROFILES.join("|")})`,
@@ -110,7 +110,7 @@ function defaultDicURL(profile, compressed) {
 }
 
 export async function createTokenizer(options = {}) {
-  const profile = normalizeProfile(options.profile ?? "medium");
+  const profile = normalizeProfile(options.profile ?? "full");
   const compressed = options.compressed === undefined ? true : !!options.compressed;
   const dicURL = options.dicURL ?? defaultDicURL(profile, compressed);
   const dic = await loadDicBin(dicURL, {
@@ -125,7 +125,7 @@ export async function createTokenizer(options = {}) {
 
 export async function createWebSmallTokenizer(options = {}) {
   return createTokenizer({
-    profile: options.profile ?? "medium",
+    profile: options.profile ?? "full",
     compressed: options.compressed,
     dicURL: options.dicURL,
   });

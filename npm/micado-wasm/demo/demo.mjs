@@ -1,4 +1,5 @@
 import { createTokenizer, DICTIONARY_PROFILES } from "../index.mjs";
+import { AOZORA_EXAMPLES } from "./examples.mjs";
 
 const statusEl = document.querySelector("#status");
 const inputEl = document.querySelector("#input");
@@ -8,24 +9,12 @@ const exampleEl = document.querySelector("#example");
 const profileEl = document.querySelector("#profile");
 
 const tokenizerCache = new Map();
-const AOZORA_EXAMPLES = [
-  { label: "夏目漱石『吾輩は猫である』", text: "吾輩は猫である。名前はまだ無い。" },
-  { label: "太宰治『人間失格』", text: "恥の多い生涯を送って来ました。" },
-  { label: "芥川龍之介『羅生門』", text: "ある日の暮方の事である。" },
-  { label: "森鴎外『舞姫』", text: "石炭をば早や積み果てつ。" },
-  { label: "島崎藤村『夜明け前』", text: "木曽路はすべて山の中である。" },
-  { label: "宮沢賢治『銀河鉄道の夜』", text: "ではみなさんは、そういうふうに川だと云われたり、乳の流れたあとだと云われたりしていたこのぼんやりと白いものがほんとうは何かご承知ですか。" },
-  { label: "清少納言『枕草子』", text: "春はあけぼの。やうやう白くなりゆく山ぎは、少しあかりて。" },
-  { label: "鴨長明『方丈記』", text: "ゆく河の流れは絶えずして、しかももとの水にあらず。" },
-  { label: "吉田兼好『徒然草』", text: "つれづれなるままに、日ぐらし硯にむかひて。" },
-  { label: "紫式部『源氏物語』", text: "いづれの御時にか、女御更衣あまたさぶらひ給ひける中に。" },
-];
 
 for (const name of DICTIONARY_PROFILES) {
   const option = document.createElement("option");
   option.value = name;
   option.textContent = name;
-  if (name === "medium") {
+  if (name === "full") {
     option.selected = true;
   }
   profileEl.append(option);
