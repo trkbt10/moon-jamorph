@@ -80,15 +80,20 @@ pub fn decode_viterbi_with_precomputed(
   let scratch_left_best_edges : Array[Int] = Array::new(capacity=8)
   let scratch_left_best_prevs : Array[Int] = Array::new(capacity=8)
   let pos_detail_pool : Array[String] = Array::new(capacity=64)
+  let mecab_feature_pool : Array[String] = Array::new(capacity=64)
   let eos_left_compact_id = @scorer.compact_connection_id(0)
   let mut eos_best_cost = @int.max_value
   let mut eos_best_prev = -1
   let bos_pos_detail_id = intern_pos_detail(pos_detail_pool, "BOS/EOS,*,*,*")
+  let bos_mecab_feature_id = intern_pos_detail(
+    mecab_feature_pool, "BOS/EOS,*,*,*,*,*,*,*,*",
+  )
   nodes.push({
     start_pos: 0,
     end_pos: 0,
     pos: @types.POS::BosEos,
     pos_detail_id: bos_pos_detail_id,
+    mecab_feature_id: bos_mecab_feature_id,
     right_id: 0,
     right_compact_id: eos_left_compact_id,
     best_cost: 0,
@@ -127,6 +132,8 @@ pub fn decode_viterbi_with_precomputed(
       let prev_index = scratch_prev_indexes[0]
       let mut cached_detail = ""
       let mut cached_detail_id = -1
+      let mut cached_feature = ""
+      let mut cached_feature_id = -1
       for cand in scratch_cands {
         let cand_left_compact_id = @scorer.compact_connection_id(cand.left_id)
         let cand_right_compact_id = @scorer.compact_connection_id(cand.right_id)
@@ -137,6 +144,15 @@ pub fn decode_viterbi_with_precomputed(
           let id = intern_pos_detail(pos_detail_pool, cand.pos_detail)
           cached_detail = cand.pos_detail
           cached_detail_id = id
+          id
+        }
+        let mecab_feature_id = if cached_feature_id >= 0 &&
+          cached_feature == cand.mecab_feature {
+          cached_feature_id
+        } else {
+          let id = intern_pos_detail(mecab_feature_pool, cand.mecab_feature)
+          cached_feature = cand.mecab_feature
+          cached_feature_id = id
           id
         }
         let best_cost = prev_best_cost +
@@ -153,6 +169,7 @@ pub fn decode_viterbi_with_precomputed(
           end_pos: cand.end_pos,
           pos: cand.pos,
           pos_detail_id,
+          mecab_feature_id,
           right_id: cand.right_id,
           right_compact_id: cand_right_compact_id,
           best_cost,
@@ -180,6 +197,8 @@ pub fn decode_viterbi_with_precomputed(
     }
     let mut cached_detail = ""
     let mut cached_detail_id = -1
+    let mut cached_feature = ""
+    let mut cached_feature_id = -1
     for cand in scratch_cands {
       let cand_right_compact_id = @scorer.compact_connection_id(cand.right_id)
       let cand_word_cost = cand.word_cost
@@ -190,6 +209,15 @@ pub fn decode_viterbi_with_precomputed(
         let id = intern_pos_detail(pos_detail_pool, cand.pos_detail)
         cached_detail = cand.pos_detail
         cached_detail_id = id
+        id
+      }
+      let mecab_feature_id = if cached_feature_id >= 0 &&
+        cached_feature == cand.mecab_feature {
+        cached_feature_id
+      } else {
+        let id = intern_pos_detail(mecab_feature_pool, cand.mecab_feature)
+        cached_feature = cand.mecab_feature
+        cached_feature_id = id
         id
       }
       let mut cache_idx = -1
@@ -231,6 +259,7 @@ pub fn decode_viterbi_with_precomputed(
           end_pos: cand.end_pos,
           pos: cand.pos,
           pos_detail_id,
+          mecab_feature_id,
           right_id: cand.right_id,
           right_compact_id: cand_right_compact_id,
           best_cost,
@@ -274,6 +303,7 @@ pub fn decode_viterbi_with_precomputed(
     surface: "",
     pos: @types.POS::Unknown,
     pos_detail: "",
+    mecab_feature: "",
     start_pos: 0,
     end_pos: 0,
   })
@@ -293,6 +323,7 @@ pub fn decode_viterbi_with_precomputed(
       surface,
       pos: node.pos,
       pos_detail: pos_detail_pool[node.pos_detail_id],
+      mecab_feature: mecab_feature_pool[node.mecab_feature_id],
       start_pos: node.start_pos,
       end_pos: node.end_pos,
     }

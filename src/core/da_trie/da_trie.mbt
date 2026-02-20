@@ -87,6 +87,7 @@ pub fn append_common_prefix_search(
         end_pos: i + 1,
         pos: entry.pos,
         pos_detail: entry.pos_detail,
+        mecab_feature: entry.mecab_feature,
         left_id: entry.left_id,
         right_id: entry.right_id,
         word_cost: entry.word_cost,

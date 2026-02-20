@@ -159,6 +159,23 @@ fn pos_expr_from_tag(pos_tag : String) -> String {
 }
 
 ///|
+fn pos_detail_from_tag(pos_tag : String) -> String {
+  match pos_tag {
+    "NOUN_GENERAL" | "名詞,一般" => "名詞,一般,*,*"
+    "NOUN_PROPER" | "名詞,固有名詞" => "名詞,固有名詞,*,*"
+    "NOUN_NON_INDEPENDENT" | "名詞,非自立" => "名詞,非自立,*,*"
+    "PARTICLE" | "助詞" => "助詞,*,*,*"
+    _ => "未知語,*,*,*"
+  }
+}
+
+///|
+fn default_mecab_feature(surface : String, pos_tag : String) -> String {
+  let pos_detail = pos_detail_from_tag(pos_tag)
+  "\{pos_detail},*,*,\{surface},*,*"
+}
+
+///|
 pub fn emit_extra_entries_module(
   symbol_name : String,
   rows : Array[LexiconRow],
@@ -182,6 +199,14 @@ pub fn emit_extra_entries_module(
     b.write_string("    pos: ")
     b.write_string(pos_expr_from_tag(row.pos_tag))
     b.write_string(",\n")
+    b.write_string("    pos_detail: \"")
+    b.write_string(pos_detail_from_tag(row.pos_tag))
+    b.write_string("\",\n")
+    b.write_string("    mecab_feature: \"")
+    b.write_string(
+      escape_mbt_string(default_mecab_feature(row.surface, row.pos_tag)),
+    )
+    b.write_string("\",\n")
     b.write_string("    left_id: ")
     b.write_string(row.left_id.to_string())
     b.write_string(",\n")

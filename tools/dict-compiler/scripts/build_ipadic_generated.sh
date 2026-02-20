@@ -40,6 +40,11 @@ BEGIN {
   pos2 = $6;
   pos3 = $7;
   pos4 = $8;
+  ctype = ($9 == "" ? "*" : $9);
+  cform = ($10 == "" ? "*" : $10);
+  base = ($11 == "" ? surface : $11);
+  read = ($12 == "" ? "*" : $12);
+  pron = ($13 == "" ? "*" : $13);
   tag = "";
   if (pos1 == "名詞") {
     if (pos2 == "固有名詞") tag = "NOUN_PROPER";
@@ -50,7 +55,7 @@ BEGIN {
   } else {
     next;
   }
-  print surface, tag, left_id, right_id, word_cost, pos1, pos2, pos3, pos4;
+  print surface, tag, left_id, right_id, word_cost, pos1, pos2, pos3, pos4, ctype, cform, base, read, pron;
   count++;
 }
 END {
@@ -97,8 +102,13 @@ function pos_expr(tag) {
   pos2 = $7;
   pos3 = $8;
   pos4 = $9;
-  printf("  { surface: \"%s\", pos: %s, pos_detail: \"%s,%s,%s,%s\", left_id: %s, right_id: %s, word_cost: %s },\n",
-    surface, pos, pos1, pos2, pos3, pos4, left_id, right_id, word_cost);
+  ctype = ($10 == "" ? "*" : $10);
+  cform = ($11 == "" ? "*" : $11);
+  base = ($12 == "" ? $1 : $12);
+  read = ($13 == "" ? "*" : $13);
+  pron = ($14 == "" ? "*" : $14);
+  printf("  { surface: \"%s\", pos: %s, pos_detail: \"%s,%s,%s,%s\", mecab_feature: \"%s,%s,%s,%s,%s,%s,%s,%s,%s\", left_id: %s, right_id: %s, word_cost: %s },\n",
+    surface, pos, pos1, pos2, pos3, pos4, pos1, pos2, pos3, pos4, ctype, cform, base, read, pron, left_id, right_id, word_cost);
 }
 ' "$SORTED_TSV" >> "$OUT_PATH"
 

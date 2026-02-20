@@ -36,6 +36,7 @@ pub(all) struct DictEntry {
   surface : String
   pos : POS
   pos_detail : String
+  mecab_feature : String
   left_id : Int
   right_id : Int
   word_cost : Int
@@ -47,6 +48,7 @@ pub(all) struct TokenCandidate {
   end_pos : Int
   pos : POS
   pos_detail : String
+  mecab_feature : String
   left_id : Int
   right_id : Int
   word_cost : Int
@@ -58,6 +60,7 @@ pub(all) struct LatticeNode {
   end_pos : Int
   pos : POS
   pos_detail_id : Int
+  mecab_feature_id : Int
   right_id : Int
   right_compact_id : Int
   best_cost : Int
@@ -69,6 +72,7 @@ pub(all) struct Morpheme {
   surface : String
   pos : POS
   pos_detail : String
+  mecab_feature : String
   start_pos : Int
   end_pos : Int
 }

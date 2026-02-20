@@ -3,7 +3,15 @@ type POS = @types.POS
 
 ///|
 fn test_entry(surface : String, pos : POS) -> @types.DictEntry {
-  { surface, pos, pos_detail: "x", left_id: 1, right_id: 1, word_cost: 1 }
+  {
+    surface,
+    pos,
+    pos_detail: "x",
+    mecab_feature: "x,*,*,*,*,*,*,*,*",
+    left_id: 1,
+    right_id: 1,
+    word_cost: 1,
+  }
 }
 
 ///|

@@ -8,7 +8,7 @@ package "username/micado_mbt/cmd/main"
 // Types and methods
 type CLIOptions
 
-type DicdirResolution
+type OutputToken
 
 // Type aliases
 
