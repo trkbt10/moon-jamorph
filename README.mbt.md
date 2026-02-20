@@ -17,18 +17,18 @@
 `micado` は現時点で完全互換を目的にしているわけではありませんが、方向性としては **MeCab 系（DA + Viterbi + 連接コスト）** に近い設計を採っています。
 軽量な `dic.bin` プロファイル（`tiny/mini/medium`）は配布サイズを優先するため、`full` と比べて精度が落ちる場合があります。`full` は参照精度、`tiny/mini/medium` は用途別のトレードオフ用です。
 
-| 項目 | **MeCab** | [ChaSen](http://chasen.naist.jp/) | [JUMAN](http://pine.kuee.kyoto-u.ac.jp/nl-resource/juman.html) | [KAKASI](http://kakasi.namazu.org) |
-|---|---|---|---|---|
-| 解析モデル | bi-gram マルコフモデル | 可変長マルコフモデル | bi-gram マルコフモデル | 最長一致 |
-| コスト推定 | コーパスから学習 | コーパスから学習 | 人手 | コストという概念なし |
-| 学習モデル | [CRF](http://www.cis.upenn.edu/~pereira/papers/crf.pdf)（識別モデル） | HMM（生成モデル） | - | - |
-| 辞書引きアルゴリズム | Double Array | Double Array | パトリシア木 | Hash? |
-| 解探索アルゴリズム | Viterbi | Viterbi | Viterbi | 決定的? |
-| 連接表の実装 | 2次元 Table | オートマトン | 2次元 Table? | 連接表なし? |
-| 品詞の階層 | 無制限多階層品詞 | 無制限多階層品詞 | 2段階固定 | 品詞という概念なし? |
-| 未知語処理 | 字種（動作定義を変更可能） | 字種（変更不可能） | 字種（変更不可能） | - |
-| 制約つき解析 | 可能 | 2.4.0 で可能 | 不可能 | 不可能 |
-| N-best 解 | 可能 | 不可能 | 不可能 | 不可能 |
+| 項目 | **micado** | **MeCab** | [ChaSen](http://chasen.naist.jp/) | [JUMAN](http://pine.kuee.kyoto-u.ac.jp/nl-resource/juman.html) | [KAKASI](http://kakasi.namazu.org) |
+|---|---|---|---|---|---|
+| 解析モデル | bi-gram マルコフモデル | bi-gram マルコフモデル | 可変長マルコフモデル | bi-gram マルコフモデル | 最長一致 |
+| コスト推定 | MeCab辞書から取得 | コーパスから学習 | コーパスから学習 | 人手 | コストという概念なし |
+| 学習モデル | -（辞書依存） | [CRF](http://www.cis.upenn.edu/~pereira/papers/crf.pdf)（識別モデル） | HMM（生成モデル） | - | - |
+| 辞書引きアルゴリズム | Double Array | Double Array | Double Array | パトリシア木 | Hash? |
+| 解探索アルゴリズム | Viterbi | Viterbi | Viterbi | Viterbi | 決定的? |
+| 連接表の実装 | 2次元 Table（圧縮ID） | 2次元 Table | オートマトン | 2次元 Table? | 連接表なし? |
+| 品詞の階層 | 簡易列挙型 + mecab_feature | 無制限多階層品詞 | 無制限多階層品詞 | 2段階固定 | 品詞という概念なし? |
+| 未知語処理 | 字種（複数候補生成） | 字種（動作定義を変更可能） | 字種（変更不可能） | 字種（変更不可能） | - |
+| 制約つき解析 | 不可能 | 可能 | 2.4.0 で可能 | 不可能 | 不可能 |
+| N-best 解 | 不可能 | 可能 | 不可能 | 不可能 | 不可能 |
 
 補足:
 - この比較は MeCab 作者サイト等で知られている実装比較を要約したものです。
@@ -53,7 +53,8 @@
 │   └── bench
 ├── tools/
 │   ├── dict-compiler
-│   └── distribution
+│   ├── distribution
+│   └── benchmark
 ├── test/accuracy, test/regression
 ├── bench/corpus
 ├── bench/lexmatch_vs_manual, bench/throughput
@@ -132,14 +133,43 @@ tools/benchmark/quick_compare.sh \
 
 ```text
 [micado/full]
+Warmup: ...
 Number_of_sentences: 2000
-Elapsed_seconds_to_tokenize_all_sentences: [min,avg,max] = [...]
-Sentences_per_second: [min,avg,max] = [...]
+Elapsed_seconds_to_tokenize_all_sentences: [...]
+Sentences_per_second: [...]
 
 [mecab/unidic]
+Warmup: ...
 Number_of_sentences: 2000
-Elapsed_seconds_to_tokenize_all_sentences: [min,avg,max] = [...]
-Sentences_per_second: [min,avg,max] = [...]
+Elapsed_seconds_to_tokenize_all_sentences: [...]
+Sentences_per_second: [...]
+```
+
+実測結果（macOS, 2026-02-20, Apple Silicon / `--runs 10 --trials 10 --copies 2000`）:
+
+```text
+[micado/full]
+Warmup: 0.161645
+Number_of_sentences: 20000
+Elapsed_seconds_to_tokenize_all_sentences: [0.161159,0.165077,0.171370]
+Sentences_per_second: [116706.54,121155.58,124101.04]
+
+[mecab/unidic]
+Warmup: 0.289314
+Number_of_sentences: 20000
+Elapsed_seconds_to_tokenize_all_sentences: [0.256347,0.261220,0.267484]
+Sentences_per_second: [74770.83,76563.82,78019.25]
+```
+
+![micado vs MeCab benchmark](bench/benchmark/quick_compare_latest.svg)
+
+グラフ生成:
+
+```sh
+python3 tools/benchmark/render_compare_chart.py \
+  --input bench/benchmark/quick_compare_2026-02-20.txt \
+  --output bench/benchmark/quick_compare_2026-02-20.svg \
+  --title "micado vs MeCab benchmark (vibrato style, 2026-02-20)"
 ```
 
 ## 辞書生成
