@@ -99,10 +99,12 @@
   <body>
     <div class="wrap">
       <h1>Micado dic.bin Demo</h1>
-      <p>Profile-selectable dictionary (`tiny/mini/medium/full`) with optional deflate loading.</p>
+      <p>文豪10人の代表作冒頭からランダム初期表示。profile（tiny/mini/medium/full）とdeflateを切り替えて試せます。</p>
       <div class="panel">
-        <textarea id="input">東京大学で自然言語処理を学ぶ</textarea>
+        <textarea id="input"></textarea>
         <div class="row">
+          <label for="example">example</label>
+          <select id="example"></select>
           <label for="profile">profile</label>
           <select id="profile"></select>
           <label><input id="compressed" type="checkbox" checked /> deflate</label>
