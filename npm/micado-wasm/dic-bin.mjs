@@ -8,6 +8,53 @@ function normalizeBytes(source) {
   throw new Error("dic.bin source must be Uint8Array or ArrayBuffer");
 }
 
+function sourceLooksCompressed(source) {
+  if (source instanceof URL) {
+    return source.pathname.toLowerCase().endsWith(".deflate");
+  }
+  if (typeof source === "string") {
+    return source.toLowerCase().endsWith(".deflate");
+  }
+  return false;
+}
+
+async function inflateDeflate(bytes) {
+  if (typeof DecompressionStream !== "undefined") {
+    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate"));
+    const arrayBuffer = await new Response(stream).arrayBuffer();
+    return new Uint8Array(arrayBuffer);
+  }
+
+  if (typeof process !== "undefined" && process.versions?.node) {
+    const { inflateSync } = await import("node:zlib");
+    const out = inflateSync(bytes);
+    return new Uint8Array(out.buffer, out.byteOffset, out.byteLength);
+  }
+
+  throw new Error("No deflate decompressor available in this runtime");
+}
+
+async function readSourceBytes(source) {
+  if (source instanceof Uint8Array || source instanceof ArrayBuffer) {
+    return normalizeBytes(source);
+  }
+
+  const url = source instanceof URL ? source : new URL(source, import.meta.url);
+  let bytes;
+  if (url.protocol === "file:") {
+    const fs = await import("node:fs/promises");
+    const file = await fs.readFile(url);
+    bytes = new Uint8Array(file.buffer, file.byteOffset, file.byteLength);
+  } else {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch dic.bin: ${response.status} ${response.statusText}`);
+    }
+    bytes = new Uint8Array(await response.arrayBuffer());
+  }
+  return bytes;
+}
+
 function parsePosFromFeature(feature) {
   if (!feature) {
     return { pos: "未知語,*", pos_detail: "未知語,*,*,*" };
@@ -99,26 +146,12 @@ export function parseDicBin(source) {
   };
 }
 
-export async function loadDicBin(source) {
-  if (source instanceof Uint8Array || source instanceof ArrayBuffer) {
-    return parseDicBin(source);
-  }
-
-  const url = source instanceof URL ? source : new URL(source, import.meta.url);
-  let bytes;
-  if (url.protocol === "file:") {
-    const fs = await import("node:fs/promises");
-    const file = await fs.readFile(url);
-    bytes = new Uint8Array(file.buffer, file.byteOffset, file.byteLength);
-  } else {
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch dic.bin: ${response.status} ${response.statusText}`);
-    }
-    bytes = new Uint8Array(await response.arrayBuffer());
-  }
-
-  return parseDicBin(bytes);
+export async function loadDicBin(source, options = {}) {
+  const bytes = await readSourceBytes(source);
+  const compressed =
+    options.compressed === undefined ? sourceLooksCompressed(source) : !!options.compressed;
+  const raw = compressed ? await inflateDeflate(bytes) : bytes;
+  return parseDicBin(raw);
 }
 
 export function createDicBinTokenizer(dic) {

@@ -63,6 +63,13 @@
         cursor: pointer;
         font: inherit;
       }
+      select {
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        padding: 8px;
+        font: inherit;
+        background: white;
+      }
       table {
         width: 100%;
         border-collapse: collapse;
@@ -92,12 +99,15 @@
   <body>
     <div class="wrap">
       <h1>Micado dic.bin Demo</h1>
-      <p>Single-file dictionary (`.dic.bin`) tokenizer running directly in browser.</p>
+      <p>Profile-selectable dictionary (`tiny/mini/medium/full`) with optional deflate loading.</p>
       <div class="panel">
         <textarea id="input">東京大学で自然言語処理を学ぶ</textarea>
         <div class="row">
+          <label for="profile">profile</label>
+          <select id="profile"></select>
+          <label><input id="compressed" type="checkbox" checked /> deflate</label>
           <button id="analyze">Analyze</button>
-          <span id="status">Loading dic.bin...</span>
+          <span id="status">Loading...</span>
         </div>
         <table>
           <thead>

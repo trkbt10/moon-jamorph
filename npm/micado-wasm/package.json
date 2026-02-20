@@ -1,7 +1,7 @@
 {
   "name": "@micado/wasm",
   "version": "0.1.0",
-  "description": "Micado Japanese tokenizer distribution with .dic.bin runtime dictionary loading",
+  "description": "Micado tokenizer: wasm API + profile-selectable .dic.bin dictionaries",
   "type": "module",
   "exports": {
     ".": "./index.mjs",
@@ -10,7 +10,9 @@
   "files": [
     "index.mjs",
     "dic-bin.mjs",
-    "dist/micado_web_small.dic.bin",
+    "dist/micado_wasm.wasm",
+    "dist/*.dic.bin",
+    "dist/*.dic.bin.deflate",
     "README.md",
     "demo"
   ],
@@ -28,7 +30,9 @@
     "tokenizer",
     "morphological-analysis",
     "moonbit",
-    "dic-bin"
+    "wasm",
+    "dic-bin",
+    "deflate"
   ],
   "license": "Apache-2.0"
 }
