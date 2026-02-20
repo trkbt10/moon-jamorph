@@ -1,10 +1,9 @@
-# micado_mbt
+# moon-jamorph
 
 MoonBit で実装している日本語形態素解析プロジェクトです。
 
-- モジュール名: `username/micado_mbt`（`moon.mod.json`）
+- プロジェクト名: `moon-jamorph`
 - ライセンス: `Apache-2.0`（`LICENSE`）
-- 詳細設計: `SPEC.md`
 
 ## 現在の構成
 
@@ -46,8 +45,6 @@ MoonBit で実装している日本語形態素解析プロジェクトです。
 
 - `Morpheme { surface, pos, pos_detail, mecab_feature, start_pos, end_pos }`
 
-トップレベル `username/micado_mbt` パッケージは現在 `fib` と `sum` を公開しています（`pkg.generated.mbti`）。
-
 ## ビルド・整形・テスト
 
 プロジェクト内ドキュメントで使っている基本コマンド:
@@ -84,8 +81,6 @@ moon run --target native cmd/main -- -d /path/to/mecab/dic -O json "太郎は走
 
 ## 辞書生成ワークフロー
 
-詳細は `IPADIC_WORKFLOW.md` と `NEOLOGD_WORKFLOW.md`。
-
 IPADIC:
 
 ```sh
@@ -104,7 +99,7 @@ DA 配列生成は `tools/dict-compiler/cmd/emit_da` を内部で利用します
 
 ## Wasm / npm 配布
 
-配布パッケージ: `npm/micado-wasm`（`@micado/wasm`）
+配布ディレクトリ: `npm/micado-wasm`
 
 - JS エントリ: `index.mjs`
 - dic.bin ローダ: `dic-bin.mjs`
@@ -121,11 +116,3 @@ tools/distribution/build_wasm_npm.sh
 ```sh
 npm run build:wasm
 ```
-
-## 関連ドキュメント
-
-- `SPEC.md`（設計）
-- `IMPLEMENTATION_PLAN.md`（実行計画）
-- `PROGRESS.md`（進捗、最終更新: 2026-02-20）
-- `PHASE4_REPORT.md`, `PHASE5_REPORT.md`
-- `P3_P4_TASK_BOARD.md`

@@ -30,7 +30,7 @@ struct OutputToken {
 
 ///|
 fn usage() -> Unit {
-  println("Micado CLI")
+  println("moon-jamorph CLI")
   println("usage: moon run cmd/main -- [options] [text]")
   println("")
   println("options:")
