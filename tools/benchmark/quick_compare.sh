@@ -34,10 +34,10 @@ parse_int() {
 
 auto_detect_dicdir() {
   local candidates=(
-    "/opt/homebrew/lib/mecab/dic/unidic"
     "/opt/homebrew/lib/mecab/dic/ipadic"
-    "/usr/local/lib/mecab/dic/unidic"
+    "/opt/homebrew/lib/mecab/dic/unidic"
     "/usr/local/lib/mecab/dic/ipadic"
+    "/usr/local/lib/mecab/dic/unidic"
     "/var/lib/mecab/dic/unidic"
     "/var/lib/mecab/dic/ipadic"
   )
@@ -102,6 +102,14 @@ if [[ ! -f "$INPUT_FILE" ]]; then
   echo "error: input file not found: $INPUT_FILE" >&2
   exit 1
 fi
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "error: python3 is required for high-resolution timing" >&2
+  exit 1
+fi
+if ! command -v mecab >/dev/null 2>&1; then
+  echo "error: mecab command not found" >&2
+  exit 1
+fi
 
 if [[ -z "$MECAB_DICDIR" ]]; then
   MECAB_DICDIR="$(auto_detect_dicdir || true)"
@@ -136,7 +144,23 @@ fi
 
 measure_once() {
   local command="$1"
-  ( /usr/bin/time -p sh -c "$command" >/dev/null ) 2>&1 | awk '/^real / {print $2}'
+  python3 - "$command" <<'PY'
+import subprocess
+import sys
+import time
+
+command = sys.argv[1]
+t0 = time.perf_counter()
+subprocess.run(
+    command,
+    shell=True,
+    stdout=subprocess.DEVNULL,
+    stderr=subprocess.DEVNULL,
+    check=True,
+)
+t1 = time.perf_counter()
+print(f"{t1 - t0:.6f}")
+PY
 }
 
 mean_of_file() {
@@ -227,9 +251,6 @@ run_case() {
   echo "Number_of_sentences: ${total_sentences}"
   echo "Elapsed_seconds_to_tokenize_all_sentences: [${min_sec},${avg_sec},${max_sec}]"
   echo "Sentences_per_second: [${sps_min},${sps_avg},${sps_max}]"
-  if [[ "$avg_sec" == "0.000000" ]]; then
-    echo "Note: timer resolution is coarse on macOS; increase --copies for stable timing."
-  fi
 }
 
 echo "[quick_compare] input=${INPUT_FILE} copies=${COPIES} total_sentences=${total_sentences}"

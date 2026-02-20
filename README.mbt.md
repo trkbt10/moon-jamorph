@@ -117,60 +117,43 @@ cat bench/corpus/aozora_openings.txt | moon run --target native cmd/tokenize -- 
 
 ## 軽量ベンチ比較
 
-`tools/benchmark/quick_compare.sh` は `vibrato` の benchmark 出力形式に寄せて、
-`micado` と `mecab` の文数あたり処理時間を比較します。
+`tools/benchmark/run_all.sh` を実行すると、`micado` / `mecab` / `vibrato` の比較を回して
+結果テキストと SVG グラフを自動生成します。
 
 ```sh
-tools/benchmark/quick_compare.sh \
-  --dicdir /opt/homebrew/lib/mecab/dic/unidic \
-  --edition full \
-  --runs 10 \
-  --trials 10 \
-  --copies 2000
+tools/benchmark/run_all.sh --dicdir /opt/homebrew/lib/mecab/dic/ipadic
 ```
 
-出力例（形式）:
+生成物:
 
 ```text
-[micado/full]
-Warmup: ...
-Number_of_sentences: 2000
-Elapsed_seconds_to_tokenize_all_sentences: [...]
-Sentences_per_second: [...]
-
-[mecab/unidic]
-Warmup: ...
-Number_of_sentences: 2000
-Elapsed_seconds_to_tokenize_all_sentences: [...]
-Sentences_per_second: [...]
+bench/benchmark/quick_compare_latest.txt
+bench/benchmark/quick_compare_latest.svg
 ```
 
 実測結果（macOS, 2026-02-20, Apple Silicon / `--runs 10 --trials 10 --copies 2000`）:
 
 ```text
 [micado/full]
-Warmup: 0.161645
+Warmup: 0.164868
 Number_of_sentences: 20000
-Elapsed_seconds_to_tokenize_all_sentences: [0.161159,0.165077,0.171370]
-Sentences_per_second: [116706.54,121155.58,124101.04]
+Elapsed_seconds_to_tokenize_all_sentences: [0.161626,0.165103,0.170895]
+Sentences_per_second: [117030.93,121136.50,123742.47]
 
-[mecab/unidic]
-Warmup: 0.289314
+[mecab/ipadic]
+Warmup: 0.181750
 Number_of_sentences: 20000
-Elapsed_seconds_to_tokenize_all_sentences: [0.256347,0.261220,0.267484]
-Sentences_per_second: [74770.83,76563.82,78019.25]
+Elapsed_seconds_to_tokenize_all_sentences: [0.173248,0.175806,0.181069]
+Sentences_per_second: [110455.13,113761.76,115441.45]
+
+[vibrato/ipadic-mecab-2_7_0]
+Warmup: 0.034950
+Number_of_sentences: 20000
+Elapsed_seconds_to_tokenize_all_sentences: [0.029864,0.030526,0.031819]
+Sentences_per_second: [628564.40,655189.58,669694.52]
 ```
 
-![micado vs MeCab benchmark](bench/benchmark/quick_compare_latest.svg)
-
-グラフ生成:
-
-```sh
-python3 tools/benchmark/render_compare_chart.py \
-  --input bench/benchmark/quick_compare_2026-02-20.txt \
-  --output bench/benchmark/quick_compare_2026-02-20.svg \
-  --title "micado vs MeCab benchmark (vibrato style, 2026-02-20)"
-```
+![micado vs MeCab vs Vibrato benchmark](bench/benchmark/quick_compare_latest.svg)
 
 ## 辞書生成
 
