@@ -78,7 +78,6 @@ pub fn decode_viterbi_with_precomputed(
     pos_detail: "BOS/EOS,*,*,*",
     right_id: 0,
     right_compact_id: eos_left_compact_id,
-    word_cost: 0,
     best_cost: 0,
     best_prev: -1,
   })
@@ -108,6 +107,53 @@ pub fn decode_viterbi_with_precomputed(
     @lattice.candidates_at_into_with_run_lengths(
       scratch_cands, chars, classes, run_lengths, pos, edition,
     )
+    if scratch_prev_indexes.length() == 1 {
+      let prev_best_cost = scratch_prev_best_costs[0]
+      let prev_right_id = scratch_prev_right_ids[0]
+      let prev_right_compact = scratch_prev_right_compacts[0]
+      let prev_index = scratch_prev_indexes[0]
+      for cand in scratch_cands {
+        let cand_left_compact_id = @scorer.compact_connection_id(cand.left_id)
+        let cand_right_compact_id = @scorer.compact_connection_id(cand.right_id)
+        let best_cost = prev_best_cost +
+          @scorer.connection_cost_with_compact(
+            prev_right_id,
+            cand.left_id,
+            prev_right_compact,
+            cand_left_compact_id,
+          ) +
+          cand.word_cost
+        let node_index = nodes.length()
+        nodes.push({
+          start_pos: cand.start_pos,
+          end_pos: cand.end_pos,
+          pos: cand.pos,
+          pos_detail: cand.pos_detail,
+          right_id: cand.right_id,
+          right_compact_id: cand_right_compact_id,
+          best_cost,
+          best_prev: prev_index,
+        })
+        if cand.end_pos == text_len {
+          next_by_end.push(-1)
+          let eos_cost = best_cost +
+            @scorer.connection_cost_with_compact(
+              cand.right_id,
+              0,
+              cand_right_compact_id,
+              eos_left_compact_id,
+            )
+          if eos_cost < eos_best_cost {
+            eos_best_cost = eos_cost
+            eos_best_prev = node_index
+          }
+        } else {
+          next_by_end.push(end_heads[cand.end_pos])
+          end_heads[cand.end_pos] = node_index
+        }
+      }
+      continue
+    }
     for cand in scratch_cands {
       let cand_right_compact_id = @scorer.compact_connection_id(cand.right_id)
       let cand_word_cost = cand.word_cost
@@ -152,7 +198,6 @@ pub fn decode_viterbi_with_precomputed(
           pos_detail: cand.pos_detail,
           right_id: cand.right_id,
           right_compact_id: cand_right_compact_id,
-          word_cost: cand.word_cost,
           best_cost,
           best_prev,
         })

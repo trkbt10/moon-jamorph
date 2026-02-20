@@ -60,7 +60,6 @@ pub(all) struct LatticeNode {
   pos_detail : String
   right_id : Int
   right_compact_id : Int
-  word_cost : Int
   best_cost : Int
   best_prev : Int
 }
