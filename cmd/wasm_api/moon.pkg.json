@@ -1,0 +1,34 @@
+{
+  "is-main": true,
+  "import": [
+    {
+      "path": "username/micado_mbt/src/tokenizer",
+      "alias": "tok"
+    },
+    {
+      "path": "username/micado_mbt/src/types",
+      "alias": "types"
+    },
+    {
+      "path": "moonbitlang/core/buffer",
+      "alias": "buffer"
+    },
+    {
+      "path": "moonbitlang/core/ref",
+      "alias": "ref"
+    },
+    "moonbitlang/core/encoding/utf8"
+  ],
+  "link": {
+    "wasm": {
+      "exports": [
+        "reset_input",
+        "push_input_byte",
+        "tokenize_nano_tsv",
+        "tokenize_mini_tsv",
+        "output_length",
+        "output_byte_at"
+      ]
+    }
+  }
+}

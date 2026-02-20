@@ -1,0 +1,24 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "username/micado_mbt/cmd/wasm_api"
+
+// Values
+pub fn output_byte_at(Int) -> Int
+
+pub fn output_length() -> Int
+
+pub fn push_input_byte(Int) -> Unit
+
+pub fn reset_input() -> Unit
+
+pub fn tokenize_mini_tsv() -> Int
+
+pub fn tokenize_nano_tsv() -> Int
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

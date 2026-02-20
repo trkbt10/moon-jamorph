@@ -1,0 +1,31 @@
+{
+  "name": "@micado/wasm",
+  "version": "0.1.0",
+  "description": "MoonBit Micado Japanese tokenizer (nano/mini editions) for WebAssembly",
+  "type": "module",
+  "exports": {
+    ".": "./index.mjs"
+  },
+  "files": [
+    "index.mjs",
+    "dist/micado_wasm.wasm",
+    "README.md",
+    "demo"
+  ],
+  "scripts": {
+    "build:wasm": "../../tools/distribution/build_wasm_npm.sh",
+    "test:node": "node ./demo/node-smoke.mjs",
+    "preview:demo": "vite demo --host --open"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0"
+  },
+  "keywords": [
+    "japanese",
+    "tokenizer",
+    "morphological-analysis",
+    "moonbit",
+    "wasm"
+  ],
+  "license": "Apache-2.0"
+}
