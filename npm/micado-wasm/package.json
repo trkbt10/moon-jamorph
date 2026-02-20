@@ -1,7 +1,7 @@
 {
   "name": "@micado/wasm",
   "version": "0.1.0",
-  "description": "MoonBit Micado Japanese tokenizer (nano/mini editions) for WebAssembly",
+  "description": "Micado Japanese tokenizer distribution with .dic.bin runtime dictionary loading",
   "type": "module",
   "exports": {
     ".": "./index.mjs",
@@ -10,7 +10,6 @@
   "files": [
     "index.mjs",
     "dic-bin.mjs",
-    "dist/micado_wasm.wasm",
     "dist/micado_web_small.dic.bin",
     "README.md",
     "demo"
@@ -29,7 +28,7 @@
     "tokenizer",
     "morphological-analysis",
     "moonbit",
-    "wasm"
+    "dic-bin"
   ],
   "license": "Apache-2.0"
 }

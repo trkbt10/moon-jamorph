@@ -11,20 +11,8 @@ const FORMAT_JSON = 1
 const FORMAT_WAKATI = 2
 
 ///|
-type Backend = Int
-
-///|
-const BACKEND_MICADO = 0
-
-///|
-const BACKEND_MECAB = 1
-
-///|
 struct CLIOptions {
-  edition : Int
   format : OutputFormat
-  use_lexmatch_scanner : Bool
-  backend : Backend
   dictionary_source : String
   requested_dicdir : String?
   text_from_args : String
@@ -48,58 +36,23 @@ fn usage() -> Unit {
   println("options:")
   println("  -h, --help                 show this help")
   println(
-    "  -d, --dicdir <path>        use MeCab dictionary directory directly",
+    "  -d, --dicdir <path>        use MeCab dictionary directory (required)",
   )
-  println(
-    "  -e, --edition <name>       nano | mini | standard | full (Micado builtin)",
-  )
-  println("  --edition <name>           same as -e")
   println("  --dicdir <path>            same as -d")
   println("  -f, --format <name>        mecab | json | wakati")
   println("  -O <name> / -O<name>       MeCab-style output selector")
   println("  --json                     same as --format json")
-  println(
-    "  --lexmatch                 use lexmatch scanner (Micado backend only)",
-  )
-  println(
-    "  --manual                   use manual scanner (Micado backend only)",
-  )
   println("")
   println("input:")
   println("  Pass input text as positional arguments.")
   println("")
   println("examples:")
   println(
-    "  moon run cmd/main -- -d /opt/homebrew/lib/mecab/dic/ipadic -O mecab \"東京大学\"",
+    "  moon run --target native cmd/main -- -d /opt/homebrew/lib/mecab/dic/ipadic -O mecab \"東京大学\"",
   )
   println(
-    "  moon run cmd/main -- -d /opt/homebrew/lib/mecab/dic/unidic -O json \"太郎は走った。\"",
+    "  moon run --target native cmd/main -- -d /opt/homebrew/lib/mecab/dic/unidic -O json \"太郎は走った。\"",
   )
-  println(
-    "  moon run cmd/main -- -e standard -O json \"迅速な形態素解析\"",
-  )
-}
-
-///|
-fn parse_edition_name(name : String) -> Int {
-  match name.to_lower() {
-    "nano" => @tok.EDITION_NANO
-    "mini" => @tok.EDITION_MINI
-    "standard" => @tok.EDITION_STANDARD
-    "full" => @tok.EDITION_FULL
-    _ => -1
-  }
-}
-
-///|
-fn edition_name(edition : Int) -> String {
-  match edition {
-    x if x == @tok.EDITION_NANO => "nano"
-    x if x == @tok.EDITION_MINI => "mini"
-    x if x == @tok.EDITION_STANDARD => "standard"
-    x if x == @tok.EDITION_FULL => "full"
-    _ => "unknown"
-  }
 }
 
 ///|
@@ -114,20 +67,13 @@ fn parse_format_name(name : String) -> OutputFormat {
 
 ///|
 fn build_cli_options(
-  edition : Int,
   format : OutputFormat,
-  use_lexmatch_scanner : Bool,
-  backend : Backend,
-  dictionary_source : String,
   requested_dicdir : String?,
   text_parts : Array[String],
 ) -> CLIOptions {
   {
-    edition,
     format,
-    use_lexmatch_scanner,
-    backend,
-    dictionary_source,
+    dictionary_source: "dicdir",
     requested_dicdir,
     text_from_args: text_parts.join(" "),
   }
@@ -135,35 +81,18 @@ fn build_cli_options(
 
 ///|
 fn parse_cli_args(args : Array[String]) -> (CLIOptions, String?, Bool) {
-  let mut edition = @tok.EDITION_NANO
   let mut format = FORMAT_MECAB
-  let mut use_lexmatch_scanner = false
-  let mut backend = BACKEND_MICADO
-  let mut dictionary_source = "edition"
   let mut requested_dicdir : String? = None
   let text_parts : Array[String] = []
   let mut i = 1
   while i < args.length() {
     let arg = args[i]
     if arg == "-h" || arg == "--help" {
-      let options = build_cli_options(
-        edition, format, use_lexmatch_scanner, backend, dictionary_source, requested_dicdir,
-        text_parts,
-      )
+      let options = build_cli_options(format, requested_dicdir, text_parts)
       return (options, None, true)
     }
     if arg == "--json" {
       format = FORMAT_JSON
-      i = i + 1
-      continue
-    }
-    if arg == "--lexmatch" {
-      use_lexmatch_scanner = true
-      i = i + 1
-      continue
-    }
-    if arg == "--manual" {
-      use_lexmatch_scanner = false
       i = i + 1
       continue
     }
@@ -173,74 +102,23 @@ fn parse_cli_args(args : Array[String]) -> (CLIOptions, String?, Bool) {
       }
       break
     }
-    if arg == "-e" || arg == "--edition" {
-      if i + 1 >= args.length() {
-        let options = build_cli_options(
-          edition, format, use_lexmatch_scanner, backend, dictionary_source, requested_dicdir,
-          text_parts,
-        )
-        return (options, Some("missing value for --edition"), false)
-      }
-      let parsed = parse_edition_name(args[i + 1])
-      if parsed < 0 {
-        let options = build_cli_options(
-          edition, format, use_lexmatch_scanner, backend, dictionary_source, requested_dicdir,
-          text_parts,
-        )
-        return (
-          options,
-          Some(
-            "unknown edition: \{args[i + 1]} (expected nano|mini|standard|full)",
-          ),
-          false,
-        )
-      }
-      edition = parsed
-      backend = BACKEND_MICADO
-      dictionary_source = "edition"
-      requested_dicdir = None
-      i = i + 2
-      continue
-    }
     if arg == "-d" || arg == "--dicdir" {
       if i + 1 >= args.length() {
-        let options = build_cli_options(
-          edition, format, use_lexmatch_scanner, backend, dictionary_source, requested_dicdir,
-          text_parts,
-        )
+        let options = build_cli_options(format, requested_dicdir, text_parts)
         return (options, Some("missing value for --dicdir"), false)
       }
-      let value = args[i + 1]
-      let parsed_edition = parse_edition_name(value)
-      if parsed_edition >= 0 {
-        // Backward-compatibility: "-d standard" style still maps to edition.
-        edition = parsed_edition
-        backend = BACKEND_MICADO
-        dictionary_source = "edition"
-        requested_dicdir = None
-        i = i + 2
-        continue
-      }
-      backend = BACKEND_MECAB
-      dictionary_source = "dicdir"
-      requested_dicdir = Some(value)
+      requested_dicdir = Some(args[i + 1])
       i = i + 2
       continue
     }
     if arg == "-f" || arg == "--format" || arg == "-O" {
       if i + 1 >= args.length() {
-        let options = build_cli_options(
-          edition, format, use_lexmatch_scanner, backend, dictionary_source, requested_dicdir,
-          text_parts,
-        )
+        let options = build_cli_options(format, requested_dicdir, text_parts)
         return (options, Some("missing value for --format"), false)
       }
       let parsed = parse_format_name(args[i + 1])
       if parsed < 0 {
-        let options = build_cli_options(
-          edition, format, use_lexmatch_scanner, backend, dictionary_source, requested_dicdir,
-          text_parts,
-        )
+        let options = build_cli_options(format, requested_dicdir, text_parts)
         return (
           options,
           Some("unknown format: \{args[i + 1]} (expected mecab|json|wakati)"),
@@ -255,10 +133,7 @@ fn parse_cli_args(args : Array[String]) -> (CLIOptions, String?, Bool) {
       let value = arg.unsafe_substring(start=2, end=arg.length())
       let parsed = parse_format_name(value)
       if parsed < 0 {
-        let options = build_cli_options(
-          edition, format, use_lexmatch_scanner, backend, dictionary_source, requested_dicdir,
-          text_parts,
-        )
+        let options = build_cli_options(format, requested_dicdir, text_parts)
         return (
           options,
           Some("unknown format: \{value} (expected mecab|json|wakati)"),
@@ -270,19 +145,13 @@ fn parse_cli_args(args : Array[String]) -> (CLIOptions, String?, Bool) {
       continue
     }
     if arg.has_prefix("-") {
-      let options = build_cli_options(
-        edition, format, use_lexmatch_scanner, backend, dictionary_source, requested_dicdir,
-        text_parts,
-      )
+      let options = build_cli_options(format, requested_dicdir, text_parts)
       return (options, Some("unknown option: \{arg}"), false)
     }
     text_parts.push(arg)
     i = i + 1
   }
-  let options = build_cli_options(
-    edition, format, use_lexmatch_scanner, backend, dictionary_source, requested_dicdir,
-    text_parts,
-  )
+  let options = build_cli_options(format, requested_dicdir, text_parts)
   (options, None, false)
 }
 
@@ -350,20 +219,6 @@ fn append_json_int_field(
 ) -> Unit {
   append_json_key(dst, key)
   dst.write_string(value.to_string())
-}
-
-///|
-fn to_output_tokens_from_morphemes(
-  tokens : Array[@types.Morpheme],
-) -> Array[OutputToken] {
-  tokens.map(token => {
-    surface: token.surface,
-    pos: token.pos.label(),
-    pos_detail: token.pos_detail,
-    mecab_feature: token.mecab_feature,
-    start_pos: token.start_pos,
-    end_pos: token.end_pos,
-  })
 }
 
 ///|
@@ -442,17 +297,7 @@ fn parse_mecab_output_tokens(output : String) -> Array[OutputToken] {
 fn render_json(tokens : Array[OutputToken], options : CLIOptions) -> String {
   let b = StringBuilder::new(size_hint=tokens.length() * 100 + 160)
   b.write_char('{')
-  append_json_string_field(b, "edition", edition_name(options.edition))
-  b.write_char(',')
-  append_json_string_field(
-    b,
-    "backend",
-    if options.backend == BACKEND_MECAB {
-      "mecab"
-    } else {
-      "micado"
-    },
-  )
+  append_json_string_field(b, "backend", "mecab")
   b.write_char(',')
   append_json_string_field(b, "dictionary_source", options.dictionary_source)
   if options.requested_dicdir is Some(dicdir) {
@@ -493,11 +338,6 @@ fn render_mecab(tokens : Array[OutputToken]) -> String {
 }
 
 ///|
-fn render_wakati(tokens : Array[OutputToken]) -> String {
-  tokens.map(token => token.surface).join(" ")
-}
-
-///|
 fn trim_trailing_newlines(text : String) -> String {
   let mut end = text.length()
   while end > 0 {
@@ -530,14 +370,15 @@ fn test_output_token(
 ///|
 test "cli parse should accept mecab compatible options" {
   let (options, error, show_help) = parse_cli_args([
-    "cmd/main", "-d", "standard", "-Ojson", "迅速",
+    "cmd/main", "-d", "/opt/homebrew/lib/mecab/dic/unidic", "-Ojson", "迅速",
   ])
   inspect(show_help, content="false")
   inspect(error, content="None")
-  inspect(options.edition, content="2")
-  inspect(options.backend, content="0")
-  inspect(options.dictionary_source, content="edition")
-  inspect(options.requested_dicdir, content="None")
+  inspect(options.dictionary_source, content="dicdir")
+  inspect(
+    options.requested_dicdir,
+    content="Some(\"/opt/homebrew/lib/mecab/dic/unidic\")",
+  )
   inspect(options.format, content="1")
   inspect(options.text_from_args, content="迅速")
 }
@@ -549,7 +390,6 @@ test "cli parse should treat dicdir path as mecab backend" {
   ])
   inspect(show_help, content="false")
   inspect(error, content="None")
-  inspect(options.backend, content="1")
   inspect(options.dictionary_source, content="dicdir")
   inspect(
     options.requested_dicdir,
@@ -583,12 +423,9 @@ test "render_mecab should include EOS line" {
 ///|
 test "render_json should escape quote and backslash" {
   let options : CLIOptions = {
-    edition: @tok.EDITION_NANO,
     format: FORMAT_JSON,
-    use_lexmatch_scanner: false,
-    backend: BACKEND_MICADO,
-    dictionary_source: "edition",
-    requested_dicdir: None,
+    dictionary_source: "dicdir",
+    requested_dicdir: Some("/opt/homebrew/lib/mecab/dic/ipadic"),
     text_from_args: "",
   }
   let out = render_json(
@@ -601,7 +438,7 @@ test "render_json should escape quote and backslash" {
     options,
   )
   assert_eq(
-    out, "{\"edition\":\"nano\",\"backend\":\"micado\",\"dictionary_source\":\"edition\",\"tokens\":[{\"surface\":\"\\\"\\\\\",\"pos\":\"名詞,一般\",\"pos_detail\":\"未知語,記号,*,*\",\"mecab_feature\":\"未知語,記号,*,*,*,*,*,*,*\",\"start_pos\":0,\"end_pos\":2}]}",
+    out, "{\"backend\":\"mecab\",\"dictionary_source\":\"dicdir\",\"requested_dicdir\":\"/opt/homebrew/lib/mecab/dic/ipadic\",\"tokens\":[{\"surface\":\"\\\"\\\\\",\"pos\":\"名詞,一般\",\"pos_detail\":\"未知語,記号,*,*\",\"mecab_feature\":\"未知語,記号,*,*,*,*,*,*,*\",\"start_pos\":0,\"end_pos\":2}]}",
   )
 }
 
@@ -618,21 +455,18 @@ test "parse_mecab_output_tokens should parse unidic tab-style feature" {
 test "mecab unidic golden: 吾輩は猫である" {
   let input = "吾輩は猫である。名前はまだ無い。"
   let expected = [
-    "吾輩\tワガハイ\tワガハイ\t我が輩\t代名詞\t\t",
-    "は\tワ\tハ\tは\t助詞-係助詞\t\t",
-    "猫\tネコ\tネコ\t猫\t名詞-普通名詞-一般\t\t",
-    "で\tデ\tダ\tだ\t助動詞\t助動詞-ダ\t連用形-一般",
+    "吾輩\tワガハイ\tワガハイ\t我が輩\t代名詞\t\t", "は\tワ\tハ\tは\t助詞-係助詞\t\t",
+    "猫\tネコ\tネコ\t猫\t名詞-普通名詞-一般\t\t", "で\tデ\tダ\tだ\t助動詞\t助動詞-ダ\t連用形-一般",
     "ある\tアル\tアル\t有る\t動詞-非自立可能\t五段-ラ行\t終止形-一般",
-    "。\t\t\t。\t補助記号-句点\t\t",
-    "名前\tナマエ\tナマエ\t名前\t名詞-普通名詞-一般\t\t",
-    "は\tワ\tハ\tは\t助詞-係助詞\t\t",
-    "まだ\tマダ\tマダ\t未だ\t副詞\t\t",
+    "。\t\t\t。\t補助記号-句点\t\t", "名前\tナマエ\tナマエ\t名前\t名詞-普通名詞-一般\t\t",
+    "は\tワ\tハ\tは\t助詞-係助詞\t\t", "まだ\tマダ\tマダ\t未だ\t副詞\t\t",
     "無い\tナイ\tナイ\t無い\t形容詞-非自立可能\t形容詞\t終止形-一般",
-    "。\t\t\t。\t補助記号-句点\t\t",
-    "EOS",
+    "。\t\t\t。\t補助記号-句点\t\t", "EOS",
   ]
   let (out, err) = run_mecab_with_dicdir(
-    input, "/opt/homebrew/lib/mecab/dic/unidic", FORMAT_MECAB,
+    input,
+    "/opt/homebrew/lib/mecab/dic/unidic",
+    FORMAT_MECAB,
   )
   inspect(err, content="None")
   assert_eq(trim_trailing_newlines(out), expected.join("\n"))
@@ -640,45 +474,34 @@ test "mecab unidic golden: 吾輩は猫である" {
 
 ///|
 test "mecab unidic golden: メロスは激怒した" {
-  let input =
-    "メロスは激怒した。必ず、かの邪智暴虐の王を除かなければならぬと決意した。メロスには政治がわからぬ。"
+  let input = "メロスは激怒した。必ず、かの邪智暴虐の王を除かなければならぬと決意した。メロスには政治がわからぬ。"
   let expected = [
     "メロス\tメロス\tメロス\tメロス-melos\t名詞-普通名詞-一般\t\t",
-    "は\tワ\tハ\tは\t助詞-係助詞\t\t",
-    "激怒\tゲキド\tゲキド\t激怒\t名詞-普通名詞-サ変可能\t\t",
+    "は\tワ\tハ\tは\t助詞-係助詞\t\t", "激怒\tゲキド\tゲキド\t激怒\t名詞-普通名詞-サ変可能\t\t",
     "し\tシ\tスル\t為る\t動詞-非自立可能\tサ行変格\t連用形-一般",
-    "た\tタ\tタ\tた\t助動詞\t助動詞-タ\t終止形-一般",
-    "。\t\t\t。\t補助記号-句点\t\t",
-    "必ず\tカナラズ\tカナラズ\t必ず\t副詞\t\t",
-    "、\t\t\t、\t補助記号-読点\t\t",
-    "かの\tカノ\tカノ\t彼の\t連体詞\t\t",
-    "邪智\tジャチ\tジャチ\t邪知\t名詞-普通名詞-一般\t\t",
+    "た\tタ\tタ\tた\t助動詞\t助動詞-タ\t終止形-一般", "。\t\t\t。\t補助記号-句点\t\t",
+    "必ず\tカナラズ\tカナラズ\t必ず\t副詞\t\t", "、\t\t\t、\t補助記号-読点\t\t",
+    "かの\tカノ\tカノ\t彼の\t連体詞\t\t", "邪智\tジャチ\tジャチ\t邪知\t名詞-普通名詞-一般\t\t",
     "暴虐\tボーギャク\tボウギャク\t暴虐\t名詞-普通名詞-形状詞可能\t\t",
-    "の\tノ\tノ\tの\t助詞-格助詞\t\t",
-    "王\tオー\tオウ\t王\t名詞-普通名詞-一般\t\t",
-    "を\tオ\tヲ\tを\t助詞-格助詞\t\t",
-    "除か\tノゾカ\tノゾク\t除く\t動詞-一般\t五段-カ行\t未然形-一般",
+    "の\tノ\tノ\tの\t助詞-格助詞\t\t", "王\tオー\tオウ\t王\t名詞-普通名詞-一般\t\t",
+    "を\tオ\tヲ\tを\t助詞-格助詞\t\t", "除か\tノゾカ\tノゾク\t除く\t動詞-一般\t五段-カ行\t未然形-一般",
     "なけれ\tナケレ\tナイ\tない\t助動詞\t助動詞-ナイ\t仮定形-一般",
-    "ば\tバ\tバ\tば\t助詞-接続助詞\t\t",
-    "なら\tナラ\tナル\t成る\t動詞-非自立可能\t五段-ラ行\t未然形-一般",
-    "ぬ\tヌ\tズ\tず\t助動詞\t助動詞-ヌ\t終止形-一般",
-    "と\tト\tト\tと\t助詞-格助詞\t\t",
+    "ば\tバ\tバ\tば\t助詞-接続助詞\t\t", "なら\tナラ\tナル\t成る\t動詞-非自立可能\t五段-ラ行\t未然形-一般",
+    "ぬ\tヌ\tズ\tず\t助動詞\t助動詞-ヌ\t終止形-一般", "と\tト\tト\tと\t助詞-格助詞\t\t",
     "決意\tケツイ\tケツイ\t決意\t名詞-普通名詞-サ変可能\t\t",
     "し\tシ\tスル\t為る\t動詞-非自立可能\tサ行変格\t連用形-一般",
-    "た\tタ\tタ\tた\t助動詞\t助動詞-タ\t終止形-一般",
-    "。\t\t\t。\t補助記号-句点\t\t",
+    "た\tタ\tタ\tた\t助動詞\t助動詞-タ\t終止形-一般", "。\t\t\t。\t補助記号-句点\t\t",
     "メロス\tメロス\tメロス\tメロス-melos\t名詞-普通名詞-一般\t\t",
-    "に\tニ\tニ\tに\t助詞-格助詞\t\t",
-    "は\tワ\tハ\tは\t助詞-係助詞\t\t",
-    "政治\tセージ\tセイジ\t政治\t名詞-普通名詞-一般\t\t",
-    "が\tガ\tガ\tが\t助詞-格助詞\t\t",
+    "に\tニ\tニ\tに\t助詞-格助詞\t\t", "は\tワ\tハ\tは\t助詞-係助詞\t\t",
+    "政治\tセージ\tセイジ\t政治\t名詞-普通名詞-一般\t\t", "が\tガ\tガ\tが\t助詞-格助詞\t\t",
     "わから\tワカラ\tワカル\t分かる\t動詞-一般\t五段-ラ行\t未然形-一般",
-    "ぬ\tヌ\tズ\tず\t助動詞\t助動詞-ヌ\t終止形-一般",
-    "。\t\t\t。\t補助記号-句点\t\t",
+    "ぬ\tヌ\tズ\tず\t助動詞\t助動詞-ヌ\t終止形-一般", "。\t\t\t。\t補助記号-句点\t\t",
     "EOS",
   ]
   let (out, err) = run_mecab_with_dicdir(
-    input, "/opt/homebrew/lib/mecab/dic/unidic", FORMAT_MECAB,
+    input,
+    "/opt/homebrew/lib/mecab/dic/unidic",
+    FORMAT_MECAB,
   )
   inspect(err, content="None")
   assert_eq(trim_trailing_newlines(out), expected.join("\n"))
@@ -686,37 +509,30 @@ test "mecab unidic golden: メロスは激怒した" {
 
 ///|
 test "mecab unidic golden: 春はあけぼの" {
-  let input =
-    "春はあけぼの。やうやう白くなりゆく山ぎは、少しあかりて、紫だちたる雲の細くたなびきたる。"
+  let input = "春はあけぼの。やうやう白くなりゆく山ぎは、少しあかりて、紫だちたる雲の細くたなびきたる。"
   let expected = [
-    "春\tハル\tハル\t春\t名詞-普通名詞-副詞可能\t\t",
-    "は\tワ\tハ\tは\t助詞-係助詞\t\t",
+    "春\tハル\tハル\t春\t名詞-普通名詞-副詞可能\t\t", "は\tワ\tハ\tは\t助詞-係助詞\t\t",
     "あけぼの\tアケボノ\tアケボノ\t曙\t名詞-普通名詞-一般\t\t",
-    "。\t\t\t。\t補助記号-句点\t\t",
-    "やう\tヨー\tヨウ\t様\t形状詞-助動詞語幹\t\t",
-    "やう\tヨー\tヨウ\t様\t形状詞-助動詞語幹\t\t",
-    "白く\tシロク\tシロイ\t白い\t形容詞-一般\t形容詞\t連用形-一般",
+    "。\t\t\t。\t補助記号-句点\t\t", "やう\tヨー\tヨウ\t様\t形状詞-助動詞語幹\t\t",
+    "やう\tヨー\tヨウ\t様\t形状詞-助動詞語幹\t\t", "白く\tシロク\tシロイ\t白い\t形容詞-一般\t形容詞\t連用形-一般",
     "なり\tナリ\tナル\t成る\t動詞-非自立可能\t五段-ラ行\t連用形-一般",
     "ゆく\tユク\tイク\t行く\t動詞-非自立可能\t五段-カ行\t連体形-一般",
     "山ぎは\tヤマギワ\tヤマギワ\t山際\t名詞-普通名詞-一般\t\t",
-    "、\t\t\t、\t補助記号-読点\t\t",
-    "少し\tスコシ\tスコシ\t少し\t副詞\t\t",
-    "あ\tア\tアー\tあー\t感動詞-フィラー\t\t",
-    "かり\tカリ\tカリル\t借りる\t動詞-一般\t上一段-ラ行\t連用形-一般",
-    "て\tテ\tテ\tて\t助詞-接続助詞\t\t",
-    "、\t\t\t、\t補助記号-読点\t\t",
+    "、\t\t\t、\t補助記号-読点\t\t", "少し\tスコシ\tスコシ\t少し\t副詞\t\t",
+    "あ\tア\tアー\tあー\t感動詞-フィラー\t\t", "かり\tカリ\tカリル\t借りる\t動詞-一般\t上一段-ラ行\t連用形-一般",
+    "て\tテ\tテ\tて\t助詞-接続助詞\t\t", "、\t\t\t、\t補助記号-読点\t\t",
     "紫だち\tムラサキダチ\tムラサキダツ\t紫立つ\t動詞-一般\t五段-タ行\t連用形-一般",
     "たる\tタル\tタリ\tたり-断定\t助動詞\t文語助動詞-タリ-断定\t連体形-一般",
-    "雲\tクモ\tクモ\t雲\t名詞-普通名詞-一般\t\t",
-    "の\tノ\tノ\tの\t助詞-格助詞\t\t",
+    "雲\tクモ\tクモ\t雲\t名詞-普通名詞-一般\t\t", "の\tノ\tノ\tの\t助詞-格助詞\t\t",
     "細く\tホソク\tホソイ\t細い\t形容詞-一般\t形容詞\t連用形-一般",
     "たなびき\tタナビキ\tタナビク\t棚引く\t動詞-一般\t五段-カ行\t連用形-一般",
     "たる\tタル\tタリ\tたり-断定\t助動詞\t文語助動詞-タリ-断定\t連体形-一般",
-    "。\t\t\t。\t補助記号-句点\t\t",
-    "EOS",
+    "。\t\t\t。\t補助記号-句点\t\t", "EOS",
   ]
   let (out, err) = run_mecab_with_dicdir(
-    input, "/opt/homebrew/lib/mecab/dic/unidic", FORMAT_MECAB,
+    input,
+    "/opt/homebrew/lib/mecab/dic/unidic",
+    FORMAT_MECAB,
   )
   inspect(err, content="None")
   assert_eq(trim_trailing_newlines(out), expected.join("\n"))
@@ -742,43 +558,26 @@ fn main {
     usage()
     return
   }
-  if options.backend == BACKEND_MECAB {
-    match options.requested_dicdir {
-      Some(dicdir) => {
-        let (stdout, run_error) = run_mecab_with_dicdir(
-          input,
-          dicdir,
-          options.format,
-        )
-        if run_error is Some(msg) {
-          println("error: \{msg}")
-          if stdout.length() > 0 {
-            println(trim_trailing_newlines(stdout))
-          }
-          return
-        }
-        if options.format == FORMAT_JSON {
-          let tokens = parse_mecab_output_tokens(stdout)
-          println(render_json(tokens, options))
-        } else {
-          println(trim_trailing_newlines(stdout))
-        }
-        return
-      }
-      None => {
-        println("error: internal error (mecab backend requires --dicdir)")
-        return
-      }
+  let dicdir = match options.requested_dicdir {
+    Some(path) => path
+    None => {
+      println("error: --dicdir is required")
+      usage()
+      return
     }
   }
-  let tokenizer = @tok.Tokenizer::new()
-    .set_edition(options.edition)
-    .set_use_lexmatch_scanner(options.use_lexmatch_scanner)
-  let micado_tokens = tokenizer.tokenize(input)
-  let tokens = to_output_tokens_from_morphemes(micado_tokens)
-  match options.format {
-    FORMAT_JSON => println(render_json(tokens, options))
-    FORMAT_WAKATI => println(render_wakati(tokens))
-    _ => println(render_mecab(tokens))
+  let (stdout, run_error) = run_mecab_with_dicdir(input, dicdir, options.format)
+  if run_error is Some(msg) {
+    println("error: \{msg}")
+    if stdout.length() > 0 {
+      println(trim_trailing_newlines(stdout))
+    }
+    return
+  }
+  if options.format == FORMAT_JSON {
+    let tokens = parse_mecab_output_tokens(stdout)
+    println(render_json(tokens, options))
+  } else {
+    println(trim_trailing_newlines(stdout))
   }
 }

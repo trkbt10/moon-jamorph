@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Micado Wasm Demo</title>
+    <title>Micado dic.bin Demo</title>
     <style>
       :root {
         --bg: #f6f7f9;
@@ -91,15 +91,13 @@
   </head>
   <body>
     <div class="wrap">
-      <h1>Micado Wasm Demo</h1>
-      <p>MoonBit tokenizer (`nano` / `mini`) running in browser via wasm.</p>
+      <h1>Micado dic.bin Demo</h1>
+      <p>Single-file dictionary (`.dic.bin`) tokenizer running directly in browser.</p>
       <div class="panel">
-        <textarea id="input">すもももももももものうち</textarea>
+        <textarea id="input">東京大学で自然言語処理を学ぶ</textarea>
         <div class="row">
-          <label><input type="radio" name="edition" value="nano" checked /> nano</label>
-          <label><input type="radio" name="edition" value="mini" /> mini</label>
           <button id="analyze">Analyze</button>
-          <span id="status">Loading wasm...</span>
+          <span id="status">Loading dic.bin...</span>
         </div>
         <table>
           <thead>
