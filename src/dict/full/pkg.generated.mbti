@@ -6,6 +6,8 @@ import {
 }
 
 // Values
+pub fn append_common_prefix_search_neologd(Array[@types.TokenCandidate], Array[Char], Int) -> Unit
+
 pub fn common_prefix_search_neologd(Array[Char], Int) -> Array[@types.TokenCandidate]
 
 // Errors

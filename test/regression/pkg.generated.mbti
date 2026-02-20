@@ -2,6 +2,7 @@
 package "username/micado_mbt/test/regression"
 
 // Values
+pub fn keepalive_regression_imports() -> Unit
 
 // Errors
 

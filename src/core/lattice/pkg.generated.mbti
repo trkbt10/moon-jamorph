@@ -8,6 +8,8 @@ import {
 // Values
 pub fn candidates_at(Array[Char], Array[@types.CharClass], Int, Int) -> Array[@types.TokenCandidate]
 
+pub fn candidates_at_into(Array[@types.TokenCandidate], Array[Char], Array[@types.CharClass], Int, Int) -> Unit
+
 // Errors
 
 // Types and methods

@@ -6,6 +6,8 @@ import {
 }
 
 // Values
+pub fn append_common_prefix_search_mini_extra(Array[@types.TokenCandidate], Array[Char], Int) -> Unit
+
 pub fn common_prefix_search_mini_extra(Array[Char], Int) -> Array[@types.TokenCandidate]
 
 // Errors

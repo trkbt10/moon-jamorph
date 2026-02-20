@@ -133,6 +133,19 @@ test "full tokenizer should keep hashtag lexeme as one token" {
 }
 
 ///|
+test "tokenize should preserve astral emoji surface boundaries" {
+  let tokens = @tok.tokenize("A🤣B")
+  inspect(tokens.map(t => t.surface), content="[\"A\", \"🤣\", \"B\"]")
+}
+
+///|
+test "tokenize_utf8 should preserve astral emoji surface boundaries" {
+  let bytes = @utf8.encode("A🤣B"[:])
+  let tokens = @tok.tokenize_utf8(bytes[:])
+  inspect(tokens.map(t => t.surface), content="[\"A\", \"🤣\", \"B\"]")
+}
+
+///|
 #skip("benchmark smoke test")
 test "phase0 benchmark smoke" {
   let report = @bench0.benchmark_scanner(

@@ -6,6 +6,8 @@ import {
 }
 
 // Values
+pub fn append_unknown_candidates(Array[@types.TokenCandidate], Array[@types.CharClass], Int) -> Unit
+
 pub fn generate_unknown_candidates(Array[@types.CharClass], Int) -> Array[@types.TokenCandidate]
 
 // Errors

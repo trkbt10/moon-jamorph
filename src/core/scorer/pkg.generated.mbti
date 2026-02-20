@@ -2,7 +2,11 @@
 package "username/micado_mbt/src/core/scorer"
 
 // Values
+pub fn compact_connection_id(Int) -> Int
+
 pub fn connection_cost(Int, Int) -> Int
+
+pub fn connection_cost_with_compact(Int, Int, Int, Int) -> Int
 
 // Errors
 

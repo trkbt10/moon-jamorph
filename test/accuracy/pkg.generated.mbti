@@ -2,6 +2,7 @@
 package "username/micado_mbt/test/accuracy"
 
 // Values
+pub fn keepalive_accuracy_imports() -> Unit
 
 // Errors
 

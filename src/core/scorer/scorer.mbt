@@ -13,14 +13,36 @@ fn to_compact_id(raw_id : Int) -> Int {
 }
 
 ///|
-pub fn connection_cost(right_id : Int, left_id : Int) -> Int {
+pub fn compact_connection_id(raw_id : Int) -> Int {
+  if raw_id >= 0 && raw_id < 4 {
+    raw_id
+  } else {
+    to_compact_id(raw_id)
+  }
+}
+
+///|
+pub fn connection_cost_with_compact(
+  right_id : Int,
+  left_id : Int,
+  right_compact_id : Int,
+  left_compact_id : Int,
+) -> Int {
   if right_id >= 0 && right_id < 4 && left_id >= 0 && left_id < 4 {
     return legacy_connection_matrix_4x4[right_id * 4 + left_id]
   }
-  let right_compact = to_compact_id(right_id)
-  let left_compact = to_compact_id(left_id)
-  if right_compact < 0 || left_compact < 0 {
+  if right_compact_id < 0 || left_compact_id < 0 {
     return unknown_connection_penalty
   }
-  @standard.connection_matrix_compact_value(right_compact, left_compact)
+  @standard.connection_matrix_compact_value(right_compact_id, left_compact_id)
+}
+
+///|
+pub fn connection_cost(right_id : Int, left_id : Int) -> Int {
+  connection_cost_with_compact(
+    right_id,
+    left_id,
+    compact_connection_id(right_id),
+    compact_connection_id(left_id),
+  )
 }

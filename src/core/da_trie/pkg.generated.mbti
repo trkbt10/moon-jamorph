@@ -6,6 +6,8 @@ import {
 }
 
 // Values
+pub fn append_common_prefix_search(Array[@types.TokenCandidate], Array[Char], Int, ReadOnlyArray[@types.DictEntry], DATrie) -> Unit
+
 pub fn common_prefix_search(Array[Char], Int, ReadOnlyArray[@types.DictEntry], DATrie) -> Array[@types.TokenCandidate]
 
 pub fn from_generated_arrays(ReadOnlyArray[String], ReadOnlyArray[Int], ReadOnlyArray[Int], ReadOnlyArray[Int], ReadOnlyArray[Int]) -> DATrie
@@ -14,11 +16,11 @@ pub fn from_generated_arrays(ReadOnlyArray[String], ReadOnlyArray[Int], ReadOnly
 
 // Types and methods
 pub struct DATrie {
-  char_table : Array[Char]
-  base : Array[Int]
-  check : Array[Int]
-  term_starts : Array[Int]
-  term_entry_indexes : Array[Int]
+  bmp_code_map : Array[Int]
+  base : ReadOnlyArray[Int]
+  check : ReadOnlyArray[Int]
+  term_starts : ReadOnlyArray[Int]
+  term_entry_indexes : ReadOnlyArray[Int]
 }
 
 // Type aliases

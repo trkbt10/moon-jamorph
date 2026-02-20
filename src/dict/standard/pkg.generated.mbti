@@ -6,6 +6,10 @@ import {
 }
 
 // Values
+pub fn append_common_prefix_search_ipadic(Array[@types.TokenCandidate], Array[Char], Int) -> Unit
+
+pub fn append_common_prefix_search_standard_extra(Array[@types.TokenCandidate], Array[Char], Int) -> Unit
+
 pub fn common_prefix_search_ipadic(Array[Char], Int) -> Array[@types.TokenCandidate]
 
 pub fn common_prefix_search_standard_extra(Array[Char], Int) -> Array[@types.TokenCandidate]
