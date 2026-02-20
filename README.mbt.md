@@ -4,6 +4,7 @@ MoonBit で実装している日本語形態素解析プロジェクトです。
 
 - プロジェクト名: `moon-jamorph`
 - ライセンス: `Apache-2.0`（`LICENSE`）
+- GitHub Pages (Demo): `https://trkbt10.github.io/moon-jamorph/`
 
 ## 現在の構成
 

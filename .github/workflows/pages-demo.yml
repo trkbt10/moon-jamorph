@@ -37,7 +37,10 @@ jobs:
         run: |
           rm -rf _site
           mkdir -p _site
-          cp -R npm/micado-wasm/* _site/
+          cp npm/micado-wasm/index.mjs _site/
+          cp npm/micado-wasm/dic-bin.mjs _site/
+          cp -R npm/micado-wasm/dist _site/
+          cp -R npm/micado-wasm/demo _site/
           cat > _site/index.html <<'HTML'
           <!doctype html>
           <html lang="ja">
