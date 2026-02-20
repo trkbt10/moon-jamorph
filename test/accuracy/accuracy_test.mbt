@@ -85,3 +85,40 @@ test "accuracy: hashtag followed by symbol should split at boundary" {
   let tokens = tokenizer.tokenize("#AirPods!")
   inspect(tokens.map(t => t.surface), content="[\"#AirPods\", \"!\"]")
 }
+
+///|
+test "accuracy: standard should split ascii-symbol-digit boundary" {
+  let tokenizer = @tok.Tokenizer::new().set_edition(@tok.EDITION_STANDARD)
+  let tokens = tokenizer.tokenize("abc!!123")
+  inspect(
+    tokens.map(t => t.surface),
+    content="[\"abc\", \"!\", \"!\", \"123\"]",
+  )
+  inspect(
+    tokens.map(t => t.pos_detail),
+    content="[\"名詞,固有名詞,未知語,*\", \"未知語,記号,*,*\", \"未知語,記号,*,*\", \"名詞,数,*,*\"]",
+  )
+}
+
+///|
+test "accuracy: utf8 should split ascii-emoji-digit boundary" {
+  let tokenizer = @tok.Tokenizer::new().set_edition(@tok.EDITION_STANDARD)
+  let bytes = @utf8.encode("abc🤣🤣123"[:])
+  let tokens = tokenizer.tokenize_utf8(bytes[:])
+  inspect(
+    tokens.map(t => t.surface),
+    content="[\"abc\", \"🤣\", \"🤣\", \"123\"]",
+  )
+}
+
+///|
+test "accuracy: lexmatch mode should keep same segmentation on mixed sentence" {
+  let manual = @tok.Tokenizer::new().set_edition(@tok.EDITION_STANDARD)
+  let lex = @tok.Tokenizer::new()
+    .set_edition(@tok.EDITION_STANDARD)
+    .set_use_lexmatch_scanner(true)
+  let text = "abc!!123🤣かな"
+  let a = manual.tokenize(text).map(t => t.surface)
+  let b = lex.tokenize(text).map(t => t.surface)
+  assert_eq(a, b)
+}

@@ -1,14 +1,12 @@
 ///|
-pub fn append_unknown_candidates(
+pub fn append_unknown_candidates_with_run_len(
   dst : Array[@types.TokenCandidate],
   classes : Array[@types.CharClass],
   pos : Int,
+  run_len : Int,
 ) -> Unit {
   let cat = classes[pos]
-  let mut run_len = 1
-  while pos + run_len < classes.length() && classes[pos + run_len] == cat {
-    run_len = run_len + 1
-  }
+  let run_len = if run_len > 0 { run_len } else { 1 }
   match cat {
     @types.CharClass::Katakana =>
       for len in 1..<=run_len {
@@ -111,6 +109,20 @@ pub fn append_unknown_candidates(
         word_cost: 10000,
       })
   }
+}
+
+///|
+pub fn append_unknown_candidates(
+  dst : Array[@types.TokenCandidate],
+  classes : Array[@types.CharClass],
+  pos : Int,
+) -> Unit {
+  let cat = classes[pos]
+  let mut run_len = 1
+  while pos + run_len < classes.length() && classes[pos + run_len] == cat {
+    run_len = run_len + 1
+  }
+  append_unknown_candidates_with_run_len(dst, classes, pos, run_len)
 }
 
 ///|

@@ -8,6 +8,8 @@ import {
 // Values
 pub fn decode_viterbi_with_classes(String, Array[@types.CharClass], Int) -> Array[@types.Morpheme]
 
+pub fn decode_viterbi_with_precomputed(String, Array[Char], Array[@types.CharClass], Array[Int], Int) -> Array[@types.Morpheme]
+
 // Errors
 
 // Types and methods

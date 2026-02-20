@@ -11,27 +11,71 @@ fn build_utf16_offsets(chars : Array[Char]) -> Array[Int] {
 }
 
 ///|
+fn build_class_run_lengths(classes : Array[@types.CharClass]) -> Array[Int] {
+  let n = classes.length()
+  let run_lengths : Array[Int] = Array::makei(n, _ => 1)
+  if n == 0 {
+    return run_lengths
+  }
+  let mut i = n - 2
+  while i >= 0 {
+    run_lengths[i] = if classes[i] == classes[i + 1] {
+      run_lengths[i + 1] + 1
+    } else {
+      1
+    }
+    i = i - 1
+  }
+  run_lengths
+}
+
+///|
 pub fn decode_viterbi_with_classes(
   input : String,
   classes : Array[@types.CharClass],
   edition : Int,
 ) -> Array[@types.Morpheme] {
   let chars = input.to_array()
+  let run_lengths = build_class_run_lengths(classes)
+  decode_viterbi_with_precomputed(input, chars, classes, run_lengths, edition)
+}
+
+///|
+pub fn decode_viterbi_with_precomputed(
+  input : String,
+  chars : Array[Char],
+  classes : Array[@types.CharClass],
+  run_lengths : Array[Int],
+  edition : Int,
+) -> Array[@types.Morpheme] {
   let text_len = chars.length()
   if text_len == 0 {
     return []
+  }
+  let run_lengths = if run_lengths.length() == text_len {
+    run_lengths
+  } else {
+    build_class_run_lengths(classes)
   }
   let nodes : Array[@types.LatticeNode] = Array::new(capacity=text_len * 4)
   let end_heads : Array[Int] = Array::makei(text_len + 1, _ => -1)
   let next_by_end : Array[Int] = Array::new(capacity=text_len * 4)
   let scratch_cands : Array[@types.TokenCandidate] = Array::new(capacity=16)
+  let scratch_prev_indexes : Array[Int] = Array::new(capacity=16)
+  let scratch_prev_best_costs : Array[Int] = Array::new(capacity=16)
+  let scratch_prev_right_ids : Array[Int] = Array::new(capacity=16)
+  let scratch_prev_right_compacts : Array[Int] = Array::new(capacity=16)
+  let scratch_left_ids : Array[Int] = Array::new(capacity=8)
+  let scratch_left_best_edges : Array[Int] = Array::new(capacity=8)
+  let scratch_left_best_prevs : Array[Int] = Array::new(capacity=8)
   let eos_left_compact_id = @scorer.compact_connection_id(0)
+  let mut eos_best_cost = @int.max_value
+  let mut eos_best_prev = -1
   nodes.push({
     start_pos: 0,
     end_pos: 0,
     pos: @types.POS::BosEos,
     pos_detail: "BOS/EOS,*,*,*",
-    left_id: 0,
     right_id: 0,
     right_compact_id: eos_left_compact_id,
     word_cost: 0,
@@ -45,65 +89,92 @@ pub fn decode_viterbi_with_classes(
     if head < 0 {
       continue
     }
-    @lattice.candidates_at_into(scratch_cands, chars, classes, pos, edition)
+    scratch_prev_indexes.truncate(0)
+    scratch_prev_best_costs.truncate(0)
+    scratch_prev_right_ids.truncate(0)
+    scratch_prev_right_compacts.truncate(0)
+    scratch_left_ids.truncate(0)
+    scratch_left_best_edges.truncate(0)
+    scratch_left_best_prevs.truncate(0)
+    let mut cursor = head
+    while cursor >= 0 {
+      let prev = nodes[cursor]
+      scratch_prev_indexes.push(cursor)
+      scratch_prev_best_costs.push(prev.best_cost)
+      scratch_prev_right_ids.push(prev.right_id)
+      scratch_prev_right_compacts.push(prev.right_compact_id)
+      cursor = next_by_end[cursor]
+    }
+    @lattice.candidates_at_into_with_run_lengths(
+      scratch_cands, chars, classes, run_lengths, pos, edition,
+    )
     for cand in scratch_cands {
-      let cand_left_compact_id = @scorer.compact_connection_id(cand.left_id)
       let cand_right_compact_id = @scorer.compact_connection_id(cand.right_id)
-      let mut best_cost = @int.max_value
-      let mut best_prev = -1
-      let mut cursor = head
-      while cursor >= 0 {
-        let prev = nodes[cursor]
-        let cost = prev.best_cost +
-          @scorer.connection_cost_with_compact(
-            prev.right_id,
-            cand.left_id,
-            prev.right_compact_id,
-            cand_left_compact_id,
-          ) +
-          cand.word_cost
-        if cost < best_cost {
-          best_cost = cost
-          best_prev = cursor
+      let cand_word_cost = cand.word_cost
+      let mut cache_idx = -1
+      for j in 0..<scratch_left_ids.length() {
+        if scratch_left_ids[j] == cand.left_id {
+          cache_idx = j
+          break
         }
-        cursor = next_by_end[cursor]
+      }
+      let mut best_edge_cost = @int.max_value
+      let mut best_prev = -1
+      if cache_idx >= 0 {
+        best_edge_cost = scratch_left_best_edges[cache_idx]
+        best_prev = scratch_left_best_prevs[cache_idx]
+      } else {
+        let cand_left_compact_id = @scorer.compact_connection_id(cand.left_id)
+        for i in 0..<scratch_prev_indexes.length() {
+          let edge_cost = scratch_prev_best_costs[i] +
+            @scorer.connection_cost_with_compact(
+              scratch_prev_right_ids[i],
+              cand.left_id,
+              scratch_prev_right_compacts[i],
+              cand_left_compact_id,
+            )
+          if edge_cost < best_edge_cost {
+            best_edge_cost = edge_cost
+            best_prev = scratch_prev_indexes[i]
+          }
+        }
+        scratch_left_ids.push(cand.left_id)
+        scratch_left_best_edges.push(best_edge_cost)
+        scratch_left_best_prevs.push(best_prev)
       }
       if best_prev >= 0 {
+        let best_cost = best_edge_cost + cand_word_cost
         let node_index = nodes.length()
         nodes.push({
           start_pos: cand.start_pos,
           end_pos: cand.end_pos,
           pos: cand.pos,
           pos_detail: cand.pos_detail,
-          left_id: cand.left_id,
           right_id: cand.right_id,
           right_compact_id: cand_right_compact_id,
           word_cost: cand.word_cost,
           best_cost,
           best_prev,
         })
-        next_by_end.push(end_heads[cand.end_pos])
-        end_heads[cand.end_pos] = node_index
+        if cand.end_pos == text_len {
+          next_by_end.push(-1)
+          let eos_cost = best_cost +
+            @scorer.connection_cost_with_compact(
+              cand.right_id,
+              0,
+              cand_right_compact_id,
+              eos_left_compact_id,
+            )
+          if eos_cost < eos_best_cost {
+            eos_best_cost = eos_cost
+            eos_best_prev = node_index
+          }
+        } else {
+          next_by_end.push(end_heads[cand.end_pos])
+          end_heads[cand.end_pos] = node_index
+        }
       }
     }
-  }
-  let mut eos_best_cost = @int.max_value
-  let mut eos_best_prev = -1
-  let mut eos_cursor = end_heads[text_len]
-  while eos_cursor >= 0 {
-    let prev = nodes[eos_cursor]
-    let cost = prev.best_cost +
-      @scorer.connection_cost_with_compact(
-        prev.right_id,
-        0,
-        prev.right_compact_id,
-        eos_left_compact_id,
-      )
-    if cost < eos_best_cost {
-      eos_best_cost = cost
-      eos_best_prev = eos_cursor
-    }
-    eos_cursor = next_by_end[eos_cursor]
   }
   if eos_best_prev < 0 {
     return []

@@ -15,6 +15,54 @@ test "scanner manual and lexmatch should match on basic sentence" {
 }
 
 ///|
+test "scanner should compute class run lengths" {
+  let classes = @scanner.scan_char_classes_manual("ああA!!")
+  let runs = @scanner.compute_class_run_lengths(classes)
+  inspect(runs, content="[2, 1, 1, 2, 1]")
+}
+
+///|
+test "scanner manual with run lengths should match expected classes" {
+  let (classes, runs) = @scanner.scan_char_classes_manual_chars_with_run_lengths(
+    "ああA!!".to_array(),
+  )
+  inspect(classes, content="[Hiragana, Hiragana, AsciiAlpha, Symbol, Symbol]")
+  inspect(runs, content="[2, 1, 1, 2, 1]")
+}
+
+///|
+test "scanner lexmatch with run lengths should match expected classes" {
+  let (classes, runs) = @scanner.scan_char_classes_lexmatch_chars_with_run_lengths(
+    "ああA!!".to_array(),
+  )
+  inspect(classes, content="[Hiragana, Hiragana, AsciiAlpha, Symbol, Symbol]")
+  inspect(runs, content="[2, 1, 1, 2, 1]")
+}
+
+///|
+test "utf8 scanner manual with run lengths should detect run boundaries" {
+  let bytes = @utf8.encode("aaああ!!"[:])
+  let (classes, runs) = @scanner8.scan_char_classes_manual_utf8_with_run_lengths(
+    bytes[:],
+  )
+  inspect(
+    classes,
+    content="[AsciiAlpha, AsciiAlpha, Hiragana, Hiragana, Symbol, Symbol]",
+  )
+  inspect(runs, content="[2, 1, 2, 1, 2, 1]")
+}
+
+///|
+test "utf8 scanner run lengths should handle astral emoji run" {
+  let bytes = @utf8.encode("a🤣🤣b"[:])
+  let (classes, runs) = @scanner8.scan_char_classes_manual_utf8_with_run_lengths(
+    bytes[:],
+  )
+  inspect(classes, content="[AsciiAlpha, Other, Other, AsciiAlpha]")
+  inspect(runs, content="[1, 2, 1, 1]")
+}
+
+///|
 test "tokenize should parse sumomo sentence with viterbi" {
   let tokens = @tok.tokenize("すもももももももものうち")
   inspect(
@@ -57,6 +105,32 @@ test "tokenizer options should be composable" {
     t3.tokenize("すもももももももものうち").length() > 0,
     content="true",
   )
+}
+
+///|
+test "lexmatch scanner should match manual on mixed boundaries" {
+  let manual = @tok.Tokenizer::new().set_edition(@tok.EDITION_STANDARD)
+  let lex = @tok.Tokenizer::new()
+    .set_edition(@tok.EDITION_STANDARD)
+    .set_use_lexmatch_scanner(true)
+  let text = "abc!!123🤣かな"
+  let m = manual.tokenize(text)
+  let l = lex.tokenize(text)
+  assert_eq(l.map(t => t.surface), m.map(t => t.surface))
+  assert_eq(l.map(t => t.pos_detail), m.map(t => t.pos_detail))
+}
+
+///|
+test "lexmatch scanner should match manual on utf8 mixed boundaries" {
+  let manual = @tok.Tokenizer::new().set_edition(@tok.EDITION_STANDARD)
+  let lex = @tok.Tokenizer::new()
+    .set_edition(@tok.EDITION_STANDARD)
+    .set_use_lexmatch_scanner(true)
+  let bytes = @utf8.encode("abc!!123🤣かな"[:])
+  let m = manual.tokenize_utf8(bytes[:])
+  let l = lex.tokenize_utf8(bytes[:])
+  assert_eq(l.map(t => t.surface), m.map(t => t.surface))
+  assert_eq(l.map(t => t.pos_detail), m.map(t => t.pos_detail))
 }
 
 ///|

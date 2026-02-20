@@ -34,11 +34,48 @@ pub fn classify_lexmatch(ch : Char) -> @types.CharClass {
 
 ///|
 pub fn scan_char_classes_manual(input : String) -> Array[@types.CharClass] {
-  let classes = Array::new(capacity=input.char_length())
-  for ch in input.iter() {
+  scan_char_classes_manual_chars(input.to_array())
+}
+
+///|
+pub fn scan_char_classes_manual_chars(
+  chars : Array[Char],
+) -> Array[@types.CharClass] {
+  let classes = Array::new(capacity=chars.length())
+  for ch in chars {
     classes.push(classify_manual(ch))
   }
   classes
+}
+
+///|
+pub fn scan_char_classes_manual_chars_with_run_lengths(
+  chars : Array[Char],
+) -> (Array[@types.CharClass], Array[Int]) {
+  let n = chars.length()
+  let classes : Array[@types.CharClass] = Array::new(capacity=n)
+  let run_lengths : Array[Int] = Array::makei(n, _ => 1)
+  let mut i = 0
+  while i < n {
+    let cat = classify_manual(chars[i])
+    let run_start = i
+    classes.push(cat)
+    i = i + 1
+    while i < n {
+      let cat_i = classify_manual(chars[i])
+      if cat_i != cat {
+        break
+      }
+      classes.push(cat_i)
+      i = i + 1
+    }
+    let mut rem = i - run_start
+    for j in run_start..<i {
+      run_lengths[j] = rem
+      rem = rem - 1
+    }
+  }
+  (classes, run_lengths)
 }
 
 ///|
@@ -48,6 +85,57 @@ pub fn scan_char_classes_lexmatch(input : String) -> Array[@types.CharClass] {
     classes.push(classify_lexmatch(ch))
   }
   classes
+}
+
+///|
+pub fn scan_char_classes_lexmatch_chars_with_run_lengths(
+  chars : Array[Char],
+) -> (Array[@types.CharClass], Array[Int]) {
+  let n = chars.length()
+  let classes : Array[@types.CharClass] = Array::new(capacity=n)
+  let run_lengths : Array[Int] = Array::makei(n, _ => 1)
+  let mut i = 0
+  while i < n {
+    let cat = classify_lexmatch(chars[i])
+    let run_start = i
+    classes.push(cat)
+    i = i + 1
+    while i < n {
+      let cat_i = classify_lexmatch(chars[i])
+      if cat_i != cat {
+        break
+      }
+      classes.push(cat_i)
+      i = i + 1
+    }
+    let mut rem = i - run_start
+    for j in run_start..<i {
+      run_lengths[j] = rem
+      rem = rem - 1
+    }
+  }
+  (classes, run_lengths)
+}
+
+///|
+pub fn compute_class_run_lengths(
+  classes : Array[@types.CharClass],
+) -> Array[Int] {
+  let n = classes.length()
+  let run_lengths : Array[Int] = Array::makei(n, _ => 1)
+  if n == 0 {
+    return run_lengths
+  }
+  let mut i = n - 2
+  while i >= 0 {
+    run_lengths[i] = if classes[i] == classes[i + 1] {
+      run_lengths[i + 1] + 1
+    } else {
+      1
+    }
+    i = i - 1
+  }
+  run_lengths
 }
 
 ///|

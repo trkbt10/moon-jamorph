@@ -60,12 +60,19 @@ pub fn Tokenizer::tokenize(self : Tokenizer, input : String) -> Array[Morpheme] 
   if input.length() == 0 {
     return []
   }
-  let classes = if self.use_lexmatch_scanner {
-    @scanner.scan_char_classes_lexmatch(input)
+  let chars = input.to_array()
+  let (classes, run_lengths) = if self.use_lexmatch_scanner {
+    @scanner.scan_char_classes_lexmatch_chars_with_run_lengths(chars)
   } else {
-    @scanner.scan_char_classes_manual(input)
+    @scanner.scan_char_classes_manual_chars_with_run_lengths(chars)
   }
-  @viterbi.decode_viterbi_with_classes(input, classes, self.edition)
+  @viterbi.decode_viterbi_with_precomputed(
+    input,
+    chars,
+    classes,
+    run_lengths,
+    self.edition,
+  )
 }
 
 ///|
@@ -77,12 +84,19 @@ pub fn Tokenizer::tokenize_utf8(
     return []
   }
   let text = @utf8.decode_lossy(input)
-  let classes = if self.use_lexmatch_scanner {
-    @scanner8.scan_char_classes_lexmatch_utf8(input)
+  let chars = text.to_array()
+  let (classes, run_lengths) = if self.use_lexmatch_scanner {
+    @scanner.scan_char_classes_lexmatch_chars_with_run_lengths(chars)
   } else {
-    @scanner8.scan_char_classes_manual_utf8(input)
+    @scanner8.scan_char_classes_manual_utf8_with_run_lengths(input)
   }
-  @viterbi.decode_viterbi_with_classes(text, classes, self.edition)
+  @viterbi.decode_viterbi_with_precomputed(
+    text,
+    chars,
+    classes,
+    run_lengths,
+    self.edition,
+  )
 }
 
 ///|

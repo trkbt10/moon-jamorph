@@ -10,6 +10,8 @@ pub fn scan_char_classes_lexmatch_utf8(BytesView) -> Array[@types.CharClass]
 
 pub fn scan_char_classes_manual_utf8(BytesView) -> Array[@types.CharClass]
 
+pub fn scan_char_classes_manual_utf8_with_run_lengths(BytesView) -> (Array[@types.CharClass], Array[Int])
+
 pub fn scanner_modes_match_utf8(BytesView) -> Bool
 
 // Errors

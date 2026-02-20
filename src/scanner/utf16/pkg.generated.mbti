@@ -10,9 +10,17 @@ pub fn classify_lexmatch(Char) -> @types.CharClass
 
 pub fn classify_manual(Char) -> @types.CharClass
 
+pub fn compute_class_run_lengths(Array[@types.CharClass]) -> Array[Int]
+
 pub fn scan_char_classes_lexmatch(String) -> Array[@types.CharClass]
 
+pub fn scan_char_classes_lexmatch_chars_with_run_lengths(Array[Char]) -> (Array[@types.CharClass], Array[Int])
+
 pub fn scan_char_classes_manual(String) -> Array[@types.CharClass]
+
+pub fn scan_char_classes_manual_chars(Array[Char]) -> Array[@types.CharClass]
+
+pub fn scan_char_classes_manual_chars_with_run_lengths(Array[Char]) -> (Array[@types.CharClass], Array[Int])
 
 pub fn scanner_modes_match(String) -> Bool
 

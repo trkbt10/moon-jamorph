@@ -85,6 +85,49 @@ pub fn scan_char_classes_manual_utf8(
 }
 
 ///|
+pub fn scan_char_classes_manual_utf8_with_run_lengths(
+  input : BytesView,
+) -> (Array[@types.CharClass], Array[Int]) {
+  let classes : Array[@types.CharClass] = Array::new(capacity=input.length())
+  let run_lengths : Array[Int] = Array::new(capacity=input.length())
+  let mut pos = 0
+  let mut has_run = false
+  let mut run_start = 0
+  let mut run_class = @types.CharClass::Other
+  while pos < input.length() {
+    let (cp, width) = decode_next_utf8_code_point(input, pos)
+    let cat = classify_code_point(cp)
+    classes.push(cat)
+    run_lengths.push(1)
+    let idx = classes.length() - 1
+    if !has_run {
+      has_run = true
+      run_start = idx
+      run_class = cat
+    } else if cat != run_class {
+      let run_end = idx
+      let mut rem = run_end - run_start
+      for j in run_start..<run_end {
+        run_lengths[j] = rem
+        rem = rem - 1
+      }
+      run_start = idx
+      run_class = cat
+    }
+    pos = pos + width
+  }
+  if has_run {
+    let run_end = classes.length()
+    let mut rem = run_end - run_start
+    for j in run_start..<run_end {
+      run_lengths[j] = rem
+      rem = rem - 1
+    }
+  }
+  (classes, run_lengths)
+}
+
+///|
 pub fn scan_char_classes_lexmatch_utf8(
   input : BytesView,
 ) -> Array[@types.CharClass] {

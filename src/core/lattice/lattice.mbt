@@ -8,16 +8,48 @@ fn append_dict_candidates(
   pos : Int,
   edition : Int,
 ) -> Unit {
-  @nano.append_common_prefix_search_nano(dst, chars, pos)
-  if edition == 1 || edition == 2 || edition == 3 {
-    @mini.append_common_prefix_search_mini_extra(dst, chars, pos)
+  match edition {
+    0 => @nano.append_common_prefix_search_nano(dst, chars, pos)
+    1 => {
+      @nano.append_common_prefix_search_nano(dst, chars, pos)
+      @mini.append_common_prefix_search_mini_extra(dst, chars, pos)
+    }
+    2 => {
+      @nano.append_common_prefix_search_nano(dst, chars, pos)
+      @mini.append_common_prefix_search_mini_extra(dst, chars, pos)
+      @standard.append_common_prefix_search_standard_extra(dst, chars, pos)
+      @standard.append_common_prefix_search_ipadic(dst, chars, pos)
+    }
+    _ => {
+      @nano.append_common_prefix_search_nano(dst, chars, pos)
+      @mini.append_common_prefix_search_mini_extra(dst, chars, pos)
+      @standard.append_common_prefix_search_standard_extra(dst, chars, pos)
+      @standard.append_common_prefix_search_ipadic(dst, chars, pos)
+      @full.append_common_prefix_search_neologd(dst, chars, pos)
+    }
   }
-  if edition == 2 || edition == 3 {
-    @standard.append_common_prefix_search_standard_extra(dst, chars, pos)
-    @standard.append_common_prefix_search_ipadic(dst, chars, pos)
-  }
-  if edition == 3 {
-    @full.append_common_prefix_search_neologd(dst, chars, pos)
+}
+
+///|
+pub fn candidates_at_into_with_run_lengths(
+  dst : Array[@types.TokenCandidate],
+  chars : Array[Char],
+  classes : Array[@types.CharClass],
+  run_lengths : Array[Int],
+  pos : Int,
+  edition : Int,
+) -> Unit {
+  dst.truncate(0)
+  append_dict_candidates(dst, chars, pos, edition)
+  if dst.is_empty() {
+    if run_lengths.length() == classes.length() {
+      let run_len = run_lengths[pos]
+      @unknown.append_unknown_candidates_with_run_len(
+        dst, classes, pos, run_len,
+      )
+    } else {
+      @unknown.append_unknown_candidates(dst, classes, pos)
+    }
   }
 }
 
@@ -29,11 +61,7 @@ pub fn candidates_at_into(
   pos : Int,
   edition : Int,
 ) -> Unit {
-  dst.truncate(0)
-  append_dict_candidates(dst, chars, pos, edition)
-  if dst.is_empty() {
-    @unknown.append_unknown_candidates(dst, classes, pos)
-  }
+  candidates_at_into_with_run_lengths(dst, chars, classes, [], pos, edition)
 }
 
 ///|
