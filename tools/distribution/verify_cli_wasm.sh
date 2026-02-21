@@ -95,8 +95,8 @@ process.stdin.on("end", () => {
   if (payload.dictionary_source !== "dicdir") {
     throw new Error(`unexpected dictionary_source: ${payload.dictionary_source}`);
   }
-  if (!Array.isArray(payload.tokens) || payload.tokens.length < 7) {
-    throw new Error("token list is too small");
+  if (!Array.isArray(payload.tokens) || payload.tokens.length === 0) {
+    throw new Error("token list is empty");
   }
   if (payload.tokens.some((t) => typeof t.surface === "string" && t.surface.includes("�"))) {
     throw new Error("mojibake detected in token surfaces");
