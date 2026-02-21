@@ -1,0 +1,14 @@
+name = "micado-edge"
+main = "src/worker.mjs"
+compatibility_date = "2026-02-21"
+minify = true
+
+[[rules]]
+type = "CompiledWasm"
+globs = ["**/*.wasm"]
+fallthrough = true
+
+[[rules]]
+type = "Data"
+globs = ["**/*.deflate"]
+fallthrough = true

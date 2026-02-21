@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>micado-edge SSE check</title>
+    <style>
+      :root {
+        --bg: #f4f6fa;
+        --panel: #ffffff;
+        --line: #d3dae6;
+        --text: #0f1522;
+        --muted: #5a6474;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "IBM Plex Sans", "Noto Sans JP", sans-serif;
+      }
+      main {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 24px 16px 32px;
+      }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 14px;
+      }
+      .row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .row > * {
+        flex: 1 1 180px;
+      }
+      label {
+        display: block;
+        font-size: 12px;
+        color: var(--muted);
+        margin-bottom: 5px;
+      }
+      input,
+      select,
+      textarea,
+      button {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 8px 10px;
+        font: inherit;
+        color: inherit;
+        background: #fff;
+      }
+      textarea {
+        min-height: 180px;
+        resize: vertical;
+      }
+      button {
+        cursor: pointer;
+        width: auto;
+        min-width: 140px;
+      }
+      .actions {
+        margin-top: 10px;
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .status {
+        margin: 0;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      pre {
+        background: #0f1522;
+        color: #dbe8ff;
+        border-radius: 10px;
+        padding: 10px;
+        overflow: auto;
+        font-size: 12px;
+        margin-top: 10px;
+      }
+      .checklist {
+        margin-top: 8px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .checklist strong {
+        color: var(--text);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>micado-edge SSE stream checker</h1>
+      <p class="status">Worker endpoint: <code>/tokenize/stream</code> (same origin)</p>
+      <div class="panel">
+        <div class="row">
+          <div>
+            <label for="endpoint">Endpoint</label>
+            <input id="endpoint" value="/tokenize/stream" />
+          </div>
+          <div>
+            <label for="format">format</label>
+            <select id="format">
+              <option value="compact" selected>compact</option>
+              <option value="detailed">detailed</option>
+              <option value="tsv">tsv</option>
+            </select>
+          </div>
+          <div>
+            <label for="windowChars">windowChars</label>
+            <input id="windowChars" type="number" value="1024" />
+          </div>
+          <div>
+            <label for="overlapChars">overlapChars</label>
+            <input id="overlapChars" type="number" value="256" />
+          </div>
+          <div>
+            <label for="forceFlushChars">forceFlushChars</label>
+            <input id="forceFlushChars" type="number" value="4096" />
+          </div>
+        </div>
+        <div style="margin-top: 10px;">
+          <label for="fixtureFile">Load text file (local)</label>
+          <input id="fixtureFile" type="file" accept=".txt,text/plain" />
+        </div>
+        <div style="margin-top: 10px;">
+          <label for="text">Text</label>
+          <textarea id="text">吾輩は猫である。名前はまだ無い。「どこで生れたかとんと見当がつかぬ」と彼は言った。</textarea>
+        </div>
+        <div class="actions">
+          <button id="run">Run SSE check</button>
+          <button id="clear" type="button">Clear log</button>
+        </div>
+        <div class="checklist">
+          <div><strong>欠損チェック:</strong> block.text を連結して元テキストと一致するか検証</div>
+          <div><strong>連続性チェック:</strong> block.start/end が隙間なく連続するか検証</div>
+          <div><strong>イベント整合:</strong> meta=1, done=1, error=0, done.finalCursor=text.length</div>
+        </div>
+        <p class="status" id="status">idle</p>
+        <pre id="summary"></pre>
+        <pre id="log"></pre>
+      </div>
+    </main>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

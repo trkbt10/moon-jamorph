@@ -1,0 +1,21 @@
+{
+  "name": "micado-edge-worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:ui": "node ./scripts/build-sse-check-ui.mjs",
+    "test:ui": "node ./scripts/test-sse-ui-build.mjs",
+    "test:streaming:core": "node ./scripts/test-streaming-core.mjs",
+    "test:healthz:sse": "npm run prepare:worker && node ./scripts/test-healthz-sse.mjs",
+    "prepare:profile": "node ./scripts/select-profile.mjs",
+    "prepare:worker": "npm run build:ui && npm run prepare:profile",
+    "dev": "npm run prepare:worker && wrangler dev",
+    "deploy:dry-run": "npm run prepare:worker && wrangler deploy --dry-run --outdir .wrangler/deploy-dry-run",
+    "check:size": "npm run prepare:worker && node ./scripts/check-size.mjs",
+    "test:sse:long-texts": "npm run prepare:worker && node ./scripts/test-sse-long-texts.mjs",
+    "deploy": "npm run check:size && wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.51.1"
+  }
+}
