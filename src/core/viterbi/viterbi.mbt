@@ -30,6 +30,75 @@ fn build_class_run_lengths(classes : Array[@types.CharClass]) -> Array[Int] {
 }
 
 ///|
+let tc_node_right_ids_ref : Ref[Array[Int]] = @ref.new(Array::new(capacity=256))
+
+///|
+let tc_node_best_costs_ref : Ref[Array[Int]] = @ref.new(
+  Array::new(capacity=256),
+)
+
+///|
+let tc_node_best_prevs_ref : Ref[Array[Int]] = @ref.new(
+  Array::new(capacity=256),
+)
+
+///|
+let tc_end_heads_ref : Ref[Array[Int]] = @ref.new(Array::new(capacity=256))
+
+///|
+let tc_next_by_end_ref : Ref[Array[Int]] = @ref.new(Array::new(capacity=256))
+
+///|
+let tc_scratch_cands_ref : Ref[Array[@types.TokenCandidate]] = @ref.new(
+  Array::new(capacity=32),
+)
+
+///|
+let tc_scratch_prev_indexes_ref : Ref[Array[Int]] = @ref.new(
+  Array::new(capacity=32),
+)
+
+///|
+let tc_scratch_prev_best_costs_ref : Ref[Array[Int]] = @ref.new(
+  Array::new(capacity=32),
+)
+
+///|
+let tc_scratch_prev_right_ids_ref : Ref[Array[Int]] = @ref.new(
+  Array::new(capacity=32),
+)
+
+///|
+let tc_scratch_left_ids_ref : Ref[Array[Int]] = @ref.new(
+  Array::new(capacity=16),
+)
+
+///|
+let tc_scratch_left_best_edges_ref : Ref[Array[Int]] = @ref.new(
+  Array::new(capacity=16),
+)
+
+///|
+let tc_scratch_left_best_prevs_ref : Ref[Array[Int]] = @ref.new(
+  Array::new(capacity=16),
+)
+
+///|
+fn ensure_length_fill(xs : Array[Int], need_len : Int, fill : Int) -> Unit {
+  while xs.length() < need_len {
+    xs.push(fill)
+  }
+}
+
+///|
+fn reset_end_heads(xs : Array[Int], need_len : Int) -> Unit {
+  ensure_length_fill(xs, need_len, -1)
+  for i in 0..<need_len {
+    xs[i] = -1
+  }
+}
+
+///|
 fn intern_pos_detail(pool : Array[String], detail : String) -> Int {
   for i in 0..<pool.length() {
     if pool[i] == detail {
@@ -75,18 +144,23 @@ pub fn decode_viterbi_token_count_with_precomputed(
   } else {
     build_class_run_lengths(classes)
   }
-  let node_right_ids : Array[Int] = Array::new(capacity=text_len * 4)
-  let node_best_costs : Array[Int] = Array::new(capacity=text_len * 4)
-  let node_best_prevs : Array[Int] = Array::new(capacity=text_len * 4)
-  let end_heads : Array[Int] = Array::makei(text_len + 1, _ => -1)
-  let next_by_end : Array[Int] = Array::new(capacity=text_len * 4)
-  let scratch_cands : Array[@types.TokenCandidate] = Array::new(capacity=16)
-  let scratch_prev_indexes : Array[Int] = Array::new(capacity=16)
-  let scratch_prev_best_costs : Array[Int] = Array::new(capacity=16)
-  let scratch_prev_right_ids : Array[Int] = Array::new(capacity=16)
-  let scratch_left_ids : Array[Int] = Array::new(capacity=8)
-  let scratch_left_best_edges : Array[Int] = Array::new(capacity=8)
-  let scratch_left_best_prevs : Array[Int] = Array::new(capacity=8)
+  let node_right_ids = tc_node_right_ids_ref.val
+  let node_best_costs = tc_node_best_costs_ref.val
+  let node_best_prevs = tc_node_best_prevs_ref.val
+  let end_heads = tc_end_heads_ref.val
+  let next_by_end = tc_next_by_end_ref.val
+  let scratch_cands = tc_scratch_cands_ref.val
+  let scratch_prev_indexes = tc_scratch_prev_indexes_ref.val
+  let scratch_prev_best_costs = tc_scratch_prev_best_costs_ref.val
+  let scratch_prev_right_ids = tc_scratch_prev_right_ids_ref.val
+  let scratch_left_ids = tc_scratch_left_ids_ref.val
+  let scratch_left_best_edges = tc_scratch_left_best_edges_ref.val
+  let scratch_left_best_prevs = tc_scratch_left_best_prevs_ref.val
+  node_right_ids.truncate(0)
+  node_best_costs.truncate(0)
+  node_best_prevs.truncate(0)
+  next_by_end.truncate(0)
+  reset_end_heads(end_heads, text_len + 1)
   let mut eos_best_cost = @int.max_value
   let mut eos_best_prev = -1
   let bos_connection_id = @scorer.bos_connection_index()

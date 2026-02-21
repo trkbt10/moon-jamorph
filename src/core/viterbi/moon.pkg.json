@@ -2,6 +2,10 @@
   "import": [
     "moonbitlang/core/int",
     {
+      "path": "moonbitlang/core/ref",
+      "alias": "ref"
+    },
+    {
       "path": "username/micado_mbt/src/types",
       "alias": "types"
     },
