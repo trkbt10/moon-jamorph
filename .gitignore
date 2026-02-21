@@ -23,3 +23,4 @@ src/dict/**/dict_*_generated.mbt
 bench/benchmark/quick_compare_*.txt
 bench/benchmark/quick_compare_*.svg
 bench/benchmark/quick_compare_*.png
+!bench/benchmark/quick_compare_latest.svg

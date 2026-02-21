@@ -9,8 +9,8 @@ BEGIN_MARKER = "<!-- BENCHMARK_RESULTS_BEGIN -->"
 END_MARKER = "<!-- BENCHMARK_RESULTS_END -->"
 
 LEGACY_PATTERN = re.compile(
-    r"実測結果（.*?\n\n```text\n.*?```(?:\n\n!\[micado vs MeCab vs Vibrato benchmark\]\(bench/benchmark/quick_compare_latest\.svg\)"
-    r"|\n\nグラフ出力:.*|\n\nシェア向けPNG:.*\n元SVG:.*)?",
+    r"実測結果（.*?\n\n```text\n.*?```(?:\n\n!\[.*?\]\(bench/benchmark/quick_compare_latest\.(?:png|svg)\))?"
+    r"(?:\n\nグラフ出力:.*|\n\nシェア向けPNG:.*\n元SVG:.*)?",
     re.DOTALL,
 )
 
@@ -23,8 +23,7 @@ def build_block(benchmark_text: str) -> str:
         "```text\n"
         f"{body}\n"
         "```\n\n"
-        "シェア向けPNG: `bench/benchmark/quick_compare_latest.png`（自動リサイズ・Git非追跡）\n"
-        "元SVG: `bench/benchmark/quick_compare_latest.svg`（ローカル生成・Git非追跡）\n"
+        "![軽量ベンチ比較チャート](bench/benchmark/quick_compare_latest.svg)\n\n"
         f"{END_MARKER}"
     )
 

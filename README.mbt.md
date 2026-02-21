@@ -192,8 +192,8 @@ Elapsed_seconds_without_startup_estimate: [0.036484,0.038028,0.041916]
 Sentences_per_second_without_startup_estimate: [477149.70,525922.69,548189.76]
 ```
 
-シェア向けPNG: `bench/benchmark/quick_compare_latest.png`（自動リサイズ・Git非追跡）
-元SVG: `bench/benchmark/quick_compare_latest.svg`（ローカル生成・Git非追跡）
+![軽量ベンチ比較チャート](bench/benchmark/quick_compare_latest.svg)
+
 <!-- BENCHMARK_RESULTS_END -->
 
 ## 辞書運用方針

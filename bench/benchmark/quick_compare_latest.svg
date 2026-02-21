@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="1460" viewBox="0 0 920 1460">
+<rect x="0" y="0" width="920" height="1460" fill="#f8fafc"/>
+<text x="24" y="34" font-size="22" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" fill="#0f172a">micado vs MeCab vs Vibrato benchmark (2026-02-21)</text>
+<text x="24" y="56" font-size="12" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" fill="#475569">Number_of_sentences: 20000</text>
+<text x="24" y="74" font-size="12" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" fill="#64748b">Startup-included metrics and startup-subtracted estimates are shown.</text>
+<rect x="24" y="96" width="872" height="320" rx="12" fill="#ffffff" stroke="#d5d9e2"/>
+<text x="38" y="116" font-size="14" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" fill="#111827">Elapsed_seconds_to_tokenize_all_sentences (avg, startup-included)</text>
+<text x="880" y="116" text-anchor="end" font-size="11" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" fill="#6b7280">lower is better</text>
+<line x1="40" y1="400" x2="880" y2="400" stroke="#d5d9e2" stroke-width="1"/>
+<rect x="40" y="339" width="272" height="61" rx="6" fill="#2563eb" opacity="0.88"/>
+<text x="176.0" y="333" text-anchor="middle" font-size="11" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" fill="#111827">0.044134s</text>
+<text x="176.0" y="414" text-anchor="middle" font-size="11" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" fill="#374151">micado/full</text>
+<rect x="324" y="154" width="272" height="246" rx="6" fill="#2563eb" opacity="0.88"/>
+<text x="460.0" y="148" text-anchor="middle" font-size="11" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" fill="#111827">0.175538s</text>
+<text x="460.0" y="414" text-anchor="middle" font-size="11" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" fill="#374151">mecab/ipadic</text>
+<rect x="608" y="162" width="272" height="238" rx="6" fill="#2563eb" opacity="0.88"/>
+<text x="744.0" y="156" text-anchor="middle" font-size="11" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" fill="#111827">0.170203s</text>
+<text x="744.0" y="414" text-anchor="middle" font-size="11" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" fill="#374151">vibrato/ipadic-mecab-...</text>
+<rect x="24" y="436" width="872" height="320" rx="12" fill="#ffffff" stroke="#d5d9e2"/>
+<text x="38" y="456" font-size="14" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" fill="#111827">Sentences_per_second (avg, startup-included)</text>
+<text x="880" y="456" text-anchor="end" font-size="11" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" fill="#6b7280">higher is better</text>
+<line x1="40" y1="740" x2="880" y2="740" stroke="#d5d9e2" stroke-width="1"/>
+<rect x="40" y="494" width="272" height="246" rx="6" fill="#059669" opacity="0.88"/>
+<text x="176.0" y="488" text-anchor="middle" font-size="11" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" fill="#111827">453165</text>
+<text x="176.0" y="754" text-anchor="middle" font-size="11" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" fill="#374151">micado/full</text>
+<rect x="324" y="679" width="272" height="61" rx="6" fill="#059669" opacity="0.88"/>
+<text x="460.0" y="673" text-anchor="middle" font-size="11" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" fill="#111827">113935</text>
+<text x="460.0" y="754" text-anchor="middle" font-size="11" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" fill="#374151">mecab/ipadic</text>
+<rect x="608" y="677" width="272" height="63" rx="6" fill="#059669" opacity="0.88"/>
+<text x="744.0" y="671" text-anchor="middle" font-size="11" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" fill="#111827">117507</text>
+<text x="744.0" y="754" text-anchor="middle" font-size="11" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" fill="#374151">vibrato/ipadic-mecab-...</text>
+<rect x="24" y="776" width="872" height="320" rx="12" fill="#ffffff" stroke="#d5d9e2"/>
+<text x="38" y="796" font-size="14" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" fill="#111827">Elapsed_seconds_without_startup_estimate (avg)</text>
+<text x="880" y="796" text-anchor="end" font-size="11" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" fill="#6b7280">lower is better</text>
+<line x1="40" y1="1080" x2="880" y2="1080" stroke="#d5d9e2" stroke-width="1"/>
+<rect x="40" y="1025" width="272" height="55" rx="6" fill="#7c3aed" opacity="0.88"/>
+<text x="176.0" y="1019" text-anchor="middle" font-size="11" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" fill="#111827">0.038119s</text>
+<text x="176.0" y="1094" text-anchor="middle" font-size="11" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" fill="#374151">micado/full</text>
+<rect x="324" y="834" width="272" height="246" rx="6" fill="#7c3aed" opacity="0.88"/>
+<text x="460.0" y="828" text-anchor="middle" font-size="11" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" fill="#111827">0.169166s</text>
+<text x="460.0" y="1094" text-anchor="middle" font-size="11" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" fill="#374151">mecab/ipadic</text>
+<rect x="608" y="1025" width="272" height="55" rx="6" fill="#7c3aed" opacity="0.88"/>
+<text x="744.0" y="1019" text-anchor="middle" font-size="11" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" fill="#111827">0.038028s</text>
+<text x="744.0" y="1094" text-anchor="middle" font-size="11" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" fill="#374151">vibrato/ipadic-mecab-...</text>
+<rect x="24" y="1116" width="872" height="320" rx="12" fill="#ffffff" stroke="#d5d9e2"/>
+<text x="38" y="1136" font-size="14" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" fill="#111827">Sentences_per_second_without_startup_estimate (avg)</text>
+<text x="880" y="1136" text-anchor="end" font-size="11" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" fill="#6b7280">higher is better</text>
+<line x1="40" y1="1420" x2="880" y2="1420" stroke="#d5d9e2" stroke-width="1"/>
+<rect x="40" y="1175" width="272" height="245" rx="6" fill="#d97706" opacity="0.88"/>
+<text x="176.0" y="1169" text-anchor="middle" font-size="11" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" fill="#111827">524673</text>
+<text x="176.0" y="1434" text-anchor="middle" font-size="11" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" fill="#374151">micado/full</text>
+<rect x="324" y="1365" width="272" height="55" rx="6" fill="#d97706" opacity="0.88"/>
+<text x="460.0" y="1359" text-anchor="middle" font-size="11" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" fill="#111827">118227</text>
+<text x="460.0" y="1434" text-anchor="middle" font-size="11" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" fill="#374151">mecab/ipadic</text>
+<rect x="608" y="1174" width="272" height="246" rx="6" fill="#d97706" opacity="0.88"/>
+<text x="744.0" y="1168" text-anchor="middle" font-size="11" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" fill="#111827">525923</text>
+<text x="744.0" y="1434" text-anchor="middle" font-size="11" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" fill="#374151">vibrato/ipadic-mecab-...</text>
+</svg>
