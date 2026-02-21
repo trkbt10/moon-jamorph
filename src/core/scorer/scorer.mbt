@@ -9,6 +9,11 @@ pub fn connection_index_or_missing(raw_id : Int) -> Int {
 }
 
 ///|
+pub fn bos_connection_index() -> Int {
+  @runtime.bos_connection_index()
+}
+
+///|
 fn hiragana_length_penalty(token_len : Int, run_len : Int) -> Int {
   let run_len = if run_len > 0 { run_len } else { token_len }
   if token_len <= 1 {

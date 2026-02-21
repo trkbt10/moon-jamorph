@@ -5,8 +5,8 @@ pub fn append_unknown_candidates_with_run_len(
   pos : Int,
   run_len : Int,
 ) -> Unit {
-  let noun_conn_id = @runtime.connection_id_to_index_or_missing(1)
-  let unknown_conn_id = @runtime.connection_id_to_index_or_missing(3)
+  let noun_conn_id = @runtime.noun_connection_index()
+  let unknown_conn_id = @runtime.unknown_connection_index()
   let cat = classes[pos]
   let run_len = if run_len > 0 { run_len } else { 1 }
   match cat {

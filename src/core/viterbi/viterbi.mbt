@@ -80,7 +80,7 @@ pub fn decode_viterbi_with_precomputed(
   let mecab_feature_pool : Array[String] = Array::new(capacity=64)
   let mut eos_best_cost = @int.max_value
   let mut eos_best_prev = -1
-  let bos_connection_id = @scorer.connection_index_or_missing(0)
+  let bos_connection_id = @scorer.bos_connection_index()
   let bos_pos_detail_id = intern_pos_detail(pos_detail_pool, "BOS/EOS,*,*,*")
   let bos_mecab_feature_id = intern_pos_detail(
     mecab_feature_pool, "BOS/EOS,*,*,*,*,*,*,*,*",

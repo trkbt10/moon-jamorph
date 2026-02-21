@@ -35,6 +35,15 @@ let runtime_connection_default_cost : Ref[Int] = @ref.new(
 )
 
 ///|
+let runtime_bos_connection_index : Ref[Int] = @ref.new(-1)
+
+///|
+let runtime_noun_connection_index : Ref[Int] = @ref.new(-1)
+
+///|
+let runtime_unknown_connection_index : Ref[Int] = @ref.new(-1)
+
+///|
 let runtime_last_error : Ref[String] = @ref.new("")
 
 ///|
@@ -48,6 +57,9 @@ fn clear_runtime_state() -> Unit {
   runtime_connection_costs.val = []
   runtime_connection_width.val = 0
   runtime_connection_default_cost.val = default_connection_cost
+  runtime_bos_connection_index.val = -1
+  runtime_noun_connection_index.val = -1
+  runtime_unknown_connection_index.val = -1
 }
 
 ///|
@@ -382,6 +394,15 @@ fn parse_and_set_runtime(bytes : BytesView) -> Bool {
   runtime_connection_costs.val = costs
   runtime_connection_width.val = num_ids
   runtime_connection_default_cost.val = default_cost
+  runtime_bos_connection_index.val = connection_index_or_missing_from_map(
+    id_to_index, 0,
+  )
+  runtime_noun_connection_index.val = connection_index_or_missing_from_map(
+    id_to_index, 1,
+  )
+  runtime_unknown_connection_index.val = connection_index_or_missing_from_map(
+    id_to_index, 3,
+  )
   runtime_last_error.val = ""
   runtime_ready.val = true
   true
@@ -390,6 +411,30 @@ fn parse_and_set_runtime(bytes : BytesView) -> Bool {
 ///|
 pub fn load_dic_bin(bytes : BytesView) -> Bool {
   parse_and_set_runtime(bytes)
+}
+
+///|
+pub fn bos_connection_index() -> Int {
+  if !runtime_ready.val {
+    return -1
+  }
+  runtime_bos_connection_index.val
+}
+
+///|
+pub fn noun_connection_index() -> Int {
+  if !runtime_ready.val {
+    return -1
+  }
+  runtime_noun_connection_index.val
+}
+
+///|
+pub fn unknown_connection_index() -> Int {
+  if !runtime_ready.val {
+    return -1
+  }
+  runtime_unknown_connection_index.val
 }
 
 ///|

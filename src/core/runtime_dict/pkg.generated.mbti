@@ -8,6 +8,8 @@ import {
 // Values
 pub fn append_dictionary_candidates(Array[@types.TokenCandidate], Array[Char], Int) -> Unit
 
+pub fn bos_connection_index() -> Int
+
 pub fn connection_cost(Int, Int) -> Int
 
 pub fn connection_cost_by_index(Int, Int) -> Int
@@ -25,6 +27,10 @@ pub fn last_error() -> String
 pub fn load_dic_bin(BytesView) -> Bool
 
 pub fn max_surface_length() -> Int
+
+pub fn noun_connection_index() -> Int
+
+pub fn unknown_connection_index() -> Int
 
 // Errors
 
