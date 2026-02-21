@@ -1,3 +1,6 @@
+// dic-bin.mjs is intentionally loader-only.
+// Tokenization/parsing runtime lives in MoonBit wasm (`createTokenizer` / `createMicadoWasm`).
+
 function normalizeBytes(source) {
   if (source instanceof Uint8Array) {
     return source;
@@ -60,14 +63,16 @@ export async function loadDicBin(source, options = {}) {
   return compressed ? inflateDeflate(bytes) : bytes;
 }
 
-export function parseDicBin() {
+function removedApiError(apiName) {
   throw new Error(
-    "parseDicBin was removed from JS runtime; use createTokenizer/createMicadoWasm (wasm runtime) instead",
+    `${apiName} was removed from JS runtime; use createTokenizer/createMicadoWasm (wasm runtime) instead`,
   );
 }
 
+export function parseDicBin() {
+  removedApiError("parseDicBin");
+}
+
 export function createDicBinTokenizer() {
-  throw new Error(
-    "createDicBinTokenizer was removed from JS runtime; use createTokenizer/createMicadoWasm instead",
-  );
+  removedApiError("createDicBinTokenizer");
 }

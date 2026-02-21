@@ -1,4 +1,4 @@
-import { createDicBinTokenizer, loadDicBin, parseDicBin } from "./dic-bin.mjs";
+import { loadDicBin } from "./dic-bin.mjs";
 
 const DEFAULT_WASM_URL = new URL("./dist/micado_wasm.wasm", import.meta.url);
 const DICTIONARY_PROFILES = ["tiny", "mini", "medium", "full"];
@@ -47,7 +47,7 @@ function posFromDetail(posDetail) {
   return `${c0},${c1}`;
 }
 
-export function parseTokenTSV(tsv) {
+function parseTokensFromTSV(tsv, detailed) {
   if (!tsv) {
     return [];
   }
@@ -69,49 +69,34 @@ export function parseTokenTSV(tsv) {
     if (!Number.isFinite(startPos) || !Number.isFinite(endPos)) {
       continue;
     }
-    tokens.push({
-      surface,
-      pos_detail: posDetail,
-      start_pos: startPos,
-      end_pos: endPos,
-    });
+    if (detailed) {
+      const mecabFeature = hasFeature ? parts[2] : posDetail;
+      tokens.push({
+        surface,
+        pos: posFromDetail(posDetail),
+        pos_detail: posDetail,
+        mecab_feature: mecabFeature,
+        start_pos: startPos,
+        end_pos: endPos,
+      });
+    } else {
+      tokens.push({
+        surface,
+        pos_detail: posDetail,
+        start_pos: startPos,
+        end_pos: endPos,
+      });
+    }
   }
   return tokens;
 }
 
+export function parseTokenTSV(tsv) {
+  return parseTokensFromTSV(tsv, false);
+}
+
 function parseDetailedTokenTSV(tsv) {
-  if (!tsv) {
-    return [];
-  }
-  const tokens = [];
-  const lines = tsv.split("\n");
-  for (const line of lines) {
-    if (!line) {
-      continue;
-    }
-    const parts = line.split("\t");
-    const surface = parts[0];
-    const posDetail = parts[1];
-    if (!surface || !posDetail) {
-      continue;
-    }
-    const hasFeature = parts.length >= 5;
-    const mecabFeature = hasFeature ? parts[2] : posDetail;
-    const startPos = Number.parseInt(parts[hasFeature ? 3 : 2], 10);
-    const endPos = Number.parseInt(parts[hasFeature ? 4 : 3], 10);
-    if (!Number.isFinite(startPos) || !Number.isFinite(endPos)) {
-      continue;
-    }
-    tokens.push({
-      surface,
-      pos: posFromDetail(posDetail),
-      pos_detail: posDetail,
-      mecab_feature: mecabFeature,
-      start_pos: startPos,
-      end_pos: endPos,
-    });
-  }
-  return tokens;
+  return parseTokensFromTSV(tsv, true);
 }
 
 function createWasmBridge(exportsObject) {
@@ -159,7 +144,7 @@ function createWasmBridge(exportsObject) {
   };
 }
 
-async function createLoadedWasmTokenizer(options = {}) {
+async function createRuntimeTokenizer(options = {}) {
   const profile = normalizeProfile(options.profile ?? "full");
   const compressed = options.compressed === undefined ? true : !!options.compressed;
   const dicURL = options.dicURL ?? defaultDicURL(profile, compressed);
@@ -196,7 +181,7 @@ async function createLoadedWasmTokenizer(options = {}) {
 }
 
 export async function createTokenizer(options = {}) {
-  const tokenizer = await createLoadedWasmTokenizer(options);
+  const tokenizer = await createRuntimeTokenizer(options);
   return {
     profile: tokenizer.profile,
     entries: [],
@@ -237,7 +222,7 @@ export async function createMicadoWasm(options = {}) {
   let nanoTokenizer;
   let miniTokenizer;
   if (nanoKey === miniKey) {
-    nanoTokenizer = await createLoadedWasmTokenizer({
+    nanoTokenizer = await createRuntimeTokenizer({
       profile: nanoProfile,
       compressed: options.compressed,
       dicURL: options.nanoDicURL ?? options.dicURL,
@@ -246,13 +231,13 @@ export async function createMicadoWasm(options = {}) {
     miniTokenizer = nanoTokenizer;
   } else {
     [nanoTokenizer, miniTokenizer] = await Promise.all([
-      createLoadedWasmTokenizer({
+      createRuntimeTokenizer({
         profile: nanoProfile,
         compressed: options.compressed,
         dicURL: options.nanoDicURL ?? options.dicURL,
         wasmURL: options.wasmURL,
       }),
-      createLoadedWasmTokenizer({
+      createRuntimeTokenizer({
         profile: miniProfile,
         compressed: options.compressed,
         dicURL: options.miniDicURL ?? options.dicURL,
@@ -289,4 +274,4 @@ export async function createWebSmallTokenizer(options = {}) {
   });
 }
 
-export { DICTIONARY_PROFILES, parseDicBin, loadDicBin, createDicBinTokenizer };
+export { DICTIONARY_PROFILES, loadDicBin };
