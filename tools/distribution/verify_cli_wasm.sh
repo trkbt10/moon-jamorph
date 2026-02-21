@@ -214,10 +214,12 @@ fi
 
 echo "[verify] wasm + dic.bin smoke"
 "${ROOT_DIR}/tools/distribution/build_wasm_npm.sh"
-if ! command -v node >/dev/null 2>&1; then
-  echo "[verify] node command is not available"
+if ! command -v npm >/dev/null 2>&1; then
+  echo "[verify] npm command is not available"
   exit 1
 fi
+npm --prefix "${ROOT_DIR}/npm/micado-wasm" ci
+npm --prefix "${ROOT_DIR}/npm/micado-wasm" run --silent build
 node --input-type=module <<'NODE'
 import { createMicadoWasm, createTokenizer } from "./npm/micado-wasm/dist/index.js";
 
