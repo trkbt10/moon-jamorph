@@ -44,11 +44,10 @@ fn intern_pos_detail(pool : Array[String], detail : String) -> Int {
 pub fn decode_viterbi_with_classes(
   input : String,
   classes : Array[@types.CharClass],
-  edition : Int,
 ) -> Array[@types.Morpheme] {
   let chars = input.to_array()
   let run_lengths = build_class_run_lengths(classes)
-  decode_viterbi_with_precomputed(input, chars, classes, run_lengths, edition)
+  decode_viterbi_with_precomputed(input, chars, classes, run_lengths)
 }
 
 ///|
@@ -57,7 +56,6 @@ pub fn decode_viterbi_with_precomputed(
   chars : Array[Char],
   classes : Array[@types.CharClass],
   run_lengths : Array[Int],
-  edition : Int,
 ) -> Array[@types.Morpheme] {
   let text_len = chars.length()
   if text_len == 0 {
@@ -75,13 +73,11 @@ pub fn decode_viterbi_with_precomputed(
   let scratch_prev_indexes : Array[Int] = Array::new(capacity=16)
   let scratch_prev_best_costs : Array[Int] = Array::new(capacity=16)
   let scratch_prev_right_ids : Array[Int] = Array::new(capacity=16)
-  let scratch_prev_right_compacts : Array[Int] = Array::new(capacity=16)
   let scratch_left_ids : Array[Int] = Array::new(capacity=8)
   let scratch_left_best_edges : Array[Int] = Array::new(capacity=8)
   let scratch_left_best_prevs : Array[Int] = Array::new(capacity=8)
   let pos_detail_pool : Array[String] = Array::new(capacity=64)
   let mecab_feature_pool : Array[String] = Array::new(capacity=64)
-  let eos_left_compact_id = @scorer.compact_connection_id(0)
   let mut eos_best_cost = @int.max_value
   let mut eos_best_prev = -1
   let bos_pos_detail_id = intern_pos_detail(pos_detail_pool, "BOS/EOS,*,*,*")
@@ -95,7 +91,6 @@ pub fn decode_viterbi_with_precomputed(
     pos_detail_id: bos_pos_detail_id,
     mecab_feature_id: bos_mecab_feature_id,
     right_id: 0,
-    right_compact_id: eos_left_compact_id,
     best_cost: 0,
     best_prev: -1,
   })
@@ -109,7 +104,6 @@ pub fn decode_viterbi_with_precomputed(
     scratch_prev_indexes.truncate(0)
     scratch_prev_best_costs.truncate(0)
     scratch_prev_right_ids.truncate(0)
-    scratch_prev_right_compacts.truncate(0)
     scratch_left_ids.truncate(0)
     scratch_left_best_edges.truncate(0)
     scratch_left_best_prevs.truncate(0)
@@ -119,24 +113,29 @@ pub fn decode_viterbi_with_precomputed(
       scratch_prev_indexes.push(cursor)
       scratch_prev_best_costs.push(prev.best_cost)
       scratch_prev_right_ids.push(prev.right_id)
-      scratch_prev_right_compacts.push(prev.right_compact_id)
       cursor = next_by_end[cursor]
     }
     @lattice.candidates_at_into_with_run_lengths(
-      scratch_cands, chars, classes, run_lengths, pos, edition,
+      scratch_cands, chars, classes, run_lengths, pos,
     )
+    let cls = classes[pos]
+    let run_len = run_lengths[pos]
     if scratch_prev_indexes.length() == 1 {
       let prev_best_cost = scratch_prev_best_costs[0]
       let prev_right_id = scratch_prev_right_ids[0]
-      let prev_right_compact = scratch_prev_right_compacts[0]
       let prev_index = scratch_prev_indexes[0]
       let mut cached_detail = ""
       let mut cached_detail_id = -1
       let mut cached_feature = ""
       let mut cached_feature_id = -1
       for cand in scratch_cands {
-        let cand_left_compact_id = @scorer.compact_connection_id(cand.left_id)
-        let cand_right_compact_id = @scorer.compact_connection_id(cand.right_id)
+        let token_len = cand.end_pos - cand.start_pos
+        let emission_adj = @scorer.emission_adjustment(
+          cand.pos,
+          cls,
+          token_len,
+          run_len,
+        )
         let pos_detail_id = if cached_detail_id >= 0 &&
           cached_detail == cand.pos_detail {
           cached_detail_id
@@ -156,13 +155,9 @@ pub fn decode_viterbi_with_precomputed(
           id
         }
         let best_cost = prev_best_cost +
-          @scorer.connection_cost_with_compact(
-            prev_right_id,
-            cand.left_id,
-            prev_right_compact,
-            cand_left_compact_id,
-          ) +
-          cand.word_cost
+          @scorer.connection_cost(prev_right_id, cand.left_id) +
+          cand.word_cost +
+          emission_adj
         let node_index = nodes.length()
         nodes.push({
           start_pos: cand.start_pos,
@@ -171,19 +166,12 @@ pub fn decode_viterbi_with_precomputed(
           pos_detail_id,
           mecab_feature_id,
           right_id: cand.right_id,
-          right_compact_id: cand_right_compact_id,
           best_cost,
           best_prev: prev_index,
         })
         if cand.end_pos == text_len {
           next_by_end.push(-1)
-          let eos_cost = best_cost +
-            @scorer.connection_cost_with_compact(
-              cand.right_id,
-              0,
-              cand_right_compact_id,
-              eos_left_compact_id,
-            )
+          let eos_cost = best_cost + @scorer.connection_cost(cand.right_id, 0)
           if eos_cost < eos_best_cost {
             eos_best_cost = eos_cost
             eos_best_prev = node_index
@@ -200,7 +188,13 @@ pub fn decode_viterbi_with_precomputed(
     let mut cached_feature = ""
     let mut cached_feature_id = -1
     for cand in scratch_cands {
-      let cand_right_compact_id = @scorer.compact_connection_id(cand.right_id)
+      let token_len = cand.end_pos - cand.start_pos
+      let emission_adj = @scorer.emission_adjustment(
+        cand.pos,
+        cls,
+        token_len,
+        run_len,
+      )
       let cand_word_cost = cand.word_cost
       let pos_detail_id = if cached_detail_id >= 0 &&
         cached_detail == cand.pos_detail {
@@ -233,15 +227,9 @@ pub fn decode_viterbi_with_precomputed(
         best_edge_cost = scratch_left_best_edges[cache_idx]
         best_prev = scratch_left_best_prevs[cache_idx]
       } else {
-        let cand_left_compact_id = @scorer.compact_connection_id(cand.left_id)
         for i in 0..<scratch_prev_indexes.length() {
           let edge_cost = scratch_prev_best_costs[i] +
-            @scorer.connection_cost_with_compact(
-              scratch_prev_right_ids[i],
-              cand.left_id,
-              scratch_prev_right_compacts[i],
-              cand_left_compact_id,
-            )
+            @scorer.connection_cost(scratch_prev_right_ids[i], cand.left_id)
           if edge_cost < best_edge_cost {
             best_edge_cost = edge_cost
             best_prev = scratch_prev_indexes[i]
@@ -252,7 +240,7 @@ pub fn decode_viterbi_with_precomputed(
         scratch_left_best_prevs.push(best_prev)
       }
       if best_prev >= 0 {
-        let best_cost = best_edge_cost + cand_word_cost
+        let best_cost = best_edge_cost + cand_word_cost + emission_adj
         let node_index = nodes.length()
         nodes.push({
           start_pos: cand.start_pos,
@@ -261,19 +249,12 @@ pub fn decode_viterbi_with_precomputed(
           pos_detail_id,
           mecab_feature_id,
           right_id: cand.right_id,
-          right_compact_id: cand_right_compact_id,
           best_cost,
           best_prev,
         })
         if cand.end_pos == text_len {
           next_by_end.push(-1)
-          let eos_cost = best_cost +
-            @scorer.connection_cost_with_compact(
-              cand.right_id,
-              0,
-              cand_right_compact_id,
-              eos_left_compact_id,
-            )
+          let eos_cost = best_cost + @scorer.connection_cost(cand.right_id, 0)
           if eos_cost < eos_best_cost {
             eos_best_cost = eos_cost
             eos_best_prev = node_index

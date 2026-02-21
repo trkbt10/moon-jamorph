@@ -66,13 +66,7 @@ pub fn Tokenizer::tokenize(self : Tokenizer, input : String) -> Array[Morpheme] 
   } else {
     @scanner.scan_char_classes_manual_chars_with_run_lengths(chars)
   }
-  @viterbi.decode_viterbi_with_precomputed(
-    input,
-    chars,
-    classes,
-    run_lengths,
-    self.edition,
-  )
+  @viterbi.decode_viterbi_with_precomputed(input, chars, classes, run_lengths)
 }
 
 ///|
@@ -90,13 +84,7 @@ pub fn Tokenizer::tokenize_utf8(
   } else {
     @scanner8.scan_char_classes_manual_utf8_with_run_lengths(input)
   }
-  @viterbi.decode_viterbi_with_precomputed(
-    text,
-    chars,
-    classes,
-    run_lengths,
-    self.edition,
-  )
+  @viterbi.decode_viterbi_with_precomputed(text, chars, classes, run_lengths)
 }
 
 ///|

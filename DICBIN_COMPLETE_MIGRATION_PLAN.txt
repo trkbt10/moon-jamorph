@@ -1,0 +1,16 @@
+dic.bin complete migration plan (2026-02-21)
+
+Goal:
+- make dic.bin canonical runtime format
+- preserve mecab-like lexical payload (surface, feature, left_id, right_id, word_cost)
+- use matrix-based connection costs + viterbi strategy in runtime tokenizer
+- remove legacy dic.bin layout support
+
+Checklist:
+[x] disable legacy dic.bin layout support
+[x] persist left_id/right_id/word_cost in dic.bin records
+[x] preserve homograph entries (no surface-only collapse)
+[x] embed compact connection matrix section in dic.bin
+[x] parse matrix section and apply matrix costs in tokenizer
+[x] keep viterbi + emission + unknown strategy path
+[x] add smoke assertions for migrated fields/matrix presence

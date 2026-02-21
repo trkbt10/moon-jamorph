@@ -6,6 +6,6 @@ test "candidates_at wrapper should preserve unknown run length behavior" {
     @types.CharClass::AsciiAlpha,
     @types.CharClass::AsciiAlpha,
   ]
-  let cands = candidates_at(chars, classes, 0, 0)
+  let cands = candidates_at(chars, classes, 0)
   inspect(cands.map(c => c.end_pos), content="[3, 1]")
 }

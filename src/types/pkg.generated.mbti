@@ -36,7 +36,6 @@ pub(all) struct LatticeNode {
   pos_detail_id : Int
   mecab_feature_id : Int
   right_id : Int
-  right_compact_id : Int
   best_cost : Int
   best_prev : Int
 }

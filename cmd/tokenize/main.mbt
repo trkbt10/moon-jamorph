@@ -39,7 +39,9 @@ fn usage() -> Unit {
   println("")
   println("options:")
   println("  -h, --help                   show this help")
-  println("  -e, --edition <name>         nano | mini | standard | full")
+  println(
+    "  -e, --edition <name>         nano | mini | standard | full (compat; currently same behavior)",
+  )
   println("  -O, --output <name>          none | count | wakati")
   println("")
   println("examples:")

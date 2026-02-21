@@ -70,6 +70,7 @@
 - `Tokenizer::tokenize(String)`
 - `Tokenizer::tokenize_utf8(BytesView)`
 - `EDITION_NANO` / `EDITION_MINI` / `EDITION_STANDARD` / `EDITION_FULL`
+  - 互換のため残しています（`src/dict` 廃止後は同一挙動）。
 
 `src/types`:
 
@@ -180,8 +181,10 @@ Sentences_per_second: [628564.40,655189.58,669694.52]
 配布ディレクトリは `npm/micado-wasm` です。
 
 - JS エントリ: `index.mjs`
-- dic.bin ローダ: `dic-bin.mjs`
+- dic.bin ローダ: `dic-bin.mjs`（I/Oのみ）
 - 生成物: `dist/micado_wasm.wasm`, `dist/*.dic.bin`, `dist/*.dic.bin.deflate`
+- `dic.bin` は `surface/mecab_feature/left_id/right_id/word_cost` を保持する現行フォーマットのみサポート（旧形式との互換は持たない）
+- 形態素解析ロジック本体は MoonBit wasm 側に統一（`dic-bin.mjs` に解析実装は持たない）
 
 生成コマンド:
 
