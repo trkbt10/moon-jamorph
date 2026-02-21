@@ -1,7 +1,7 @@
 {
   "name": "@micado/wasm",
   "version": "0.1.0",
-  "description": "micado tokenizer: wasm API + profile-selectable .dic.bin dictionaries",
+  "description": "micado tokenizer: unified dic.bin runtime with profile-selectable dictionaries",
   "type": "module",
   "exports": {
     ".": "./index.mjs",
@@ -10,7 +10,6 @@
   "files": [
     "index.mjs",
     "dic-bin.mjs",
-    "dist/micado_wasm.wasm",
     "dist/*.dic.bin",
     "dist/*.dic.bin.deflate",
     "README.md",

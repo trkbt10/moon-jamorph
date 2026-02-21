@@ -1,29 +1,6 @@
 import { createDicBinTokenizer, loadDicBin, parseDicBin } from "./dic-bin.mjs";
 
-const DEFAULT_WASM_URL = new URL("./dist/micado_wasm.wasm", import.meta.url);
 const DICTIONARY_PROFILES = ["tiny", "mini", "medium", "full"];
-
-async function loadWasmBinary(source) {
-  if (source instanceof Uint8Array) {
-    return source;
-  }
-  if (source instanceof ArrayBuffer) {
-    return new Uint8Array(source);
-  }
-
-  const url = source instanceof URL ? source : new URL(source ?? DEFAULT_WASM_URL, import.meta.url);
-  if (url.protocol === "file:") {
-    const fs = await import("node:fs/promises");
-    const bytes = await fs.readFile(url);
-    return new Uint8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  }
-
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch wasm: ${response.status} ${response.statusText}`);
-  }
-  return new Uint8Array(await response.arrayBuffer());
-}
 
 export function parseTokenTSV(tsv) {
   if (!tsv) {
@@ -49,51 +26,6 @@ export function parseTokenTSV(tsv) {
   return tokens;
 }
 
-function createWasmTokenizerApi(exportsObject) {
-  const encoder = new TextEncoder();
-  const decoder = new TextDecoder();
-
-  function decodeOutput(outputLen) {
-    const bytes = new Uint8Array(outputLen);
-    for (let i = 0; i < outputLen; i += 1) {
-      bytes[i] = exportsObject.output_byte_at(i);
-    }
-    return decoder.decode(bytes);
-  }
-
-  function tokenizeBy(fnName, text) {
-    const input = encoder.encode(text);
-    exportsObject.reset_input();
-    for (const byte of input) {
-      exportsObject.push_input_byte(byte);
-    }
-    const outputLen = exportsObject[fnName]();
-    return decodeOutput(outputLen);
-  }
-
-  return {
-    tokenizeNanoTSV(text) {
-      return tokenizeBy("tokenize_nano_tsv", text);
-    },
-    tokenizeMiniTSV(text) {
-      return tokenizeBy("tokenize_mini_tsv", text);
-    },
-    tokenizeNano(text) {
-      return parseTokenTSV(tokenizeBy("tokenize_nano_tsv", text));
-    },
-    tokenizeMini(text) {
-      return parseTokenTSV(tokenizeBy("tokenize_mini_tsv", text));
-    },
-  };
-}
-
-export async function createMicadoWasm(options = {}) {
-  const wasmBinary = await loadWasmBinary(options.wasmURL ?? DEFAULT_WASM_URL);
-  const instantiated = await WebAssembly.instantiate(wasmBinary, {});
-  const instance = "instance" in instantiated ? instantiated.instance : instantiated;
-  return createWasmTokenizerApi(instance.exports);
-}
-
 function normalizeProfile(profile) {
   const value = String(profile ?? "full").toLowerCase();
   if (!DICTIONARY_PROFILES.includes(value)) {
@@ -109,6 +41,21 @@ function defaultDicURL(profile, compressed) {
   return new URL(`./dist/${profile}${ext}`, import.meta.url);
 }
 
+function toCompactToken(token) {
+  return {
+    surface: token.surface,
+    pos_detail: token.pos_detail,
+    start_pos: token.start_pos,
+    end_pos: token.end_pos,
+  };
+}
+
+function toTSV(tokens) {
+  return tokens
+    .map((token) => `${token.surface}\t${token.pos_detail}\t${token.start_pos}\t${token.end_pos}`)
+    .join("\n");
+}
+
 export async function createTokenizer(options = {}) {
   const profile = normalizeProfile(options.profile ?? "full");
   const compressed = options.compressed === undefined ? true : !!options.compressed;
@@ -120,6 +67,60 @@ export async function createTokenizer(options = {}) {
   return {
     ...tokenizer,
     profile,
+  };
+}
+
+export async function createMicadoWasm(options = {}) {
+  const compressed = options.compressed === undefined ? true : !!options.compressed;
+  const sharedProfile = options.profile;
+  const nanoProfile = normalizeProfile(options.nanoProfile ?? sharedProfile ?? "tiny");
+  const miniProfile = normalizeProfile(options.miniProfile ?? sharedProfile ?? "mini");
+  const nanoDicURL = options.nanoDicURL ?? options.dicURL;
+  const miniDicURL = options.miniDicURL ?? options.dicURL;
+
+  const nanoKey = `${nanoProfile}|${String(nanoDicURL ?? "")}|${compressed}`;
+  const miniKey = `${miniProfile}|${String(miniDicURL ?? "")}|${compressed}`;
+  let nanoTokenizer;
+  let miniTokenizer;
+
+  if (nanoKey === miniKey) {
+    nanoTokenizer = await createTokenizer({
+      profile: nanoProfile,
+      compressed,
+      dicURL: nanoDicURL,
+    });
+    miniTokenizer = nanoTokenizer;
+  } else {
+    [nanoTokenizer, miniTokenizer] = await Promise.all([
+      createTokenizer({
+        profile: nanoProfile,
+        compressed,
+        dicURL: nanoDicURL,
+      }),
+      createTokenizer({
+        profile: miniProfile,
+        compressed,
+        dicURL: miniDicURL,
+      }),
+    ]);
+  }
+
+  return {
+    tokenizeNanoTSV(text) {
+      return toTSV(nanoTokenizer.tokenize(text));
+    },
+    tokenizeMiniTSV(text) {
+      return toTSV(miniTokenizer.tokenize(text));
+    },
+    tokenizeNano(text) {
+      return nanoTokenizer.tokenize(text).map(toCompactToken);
+    },
+    tokenizeMini(text) {
+      return miniTokenizer.tokenize(text).map(toCompactToken);
+    },
+    backend: "dic.bin",
+    nanoProfile,
+    miniProfile,
   };
 }
 
