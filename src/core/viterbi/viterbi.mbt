@@ -69,18 +69,18 @@ let tc_scratch_prev_right_ids_ref : Ref[Array[Int]] = @ref.new(
 )
 
 ///|
-let tc_scratch_left_ids_ref : Ref[Array[Int]] = @ref.new(
-  Array::new(capacity=16),
+let tc_left_cache_stamps_ref : Ref[Array[Int]] = @ref.new(
+  Array::new(capacity=256),
 )
 
 ///|
-let tc_scratch_left_best_edges_ref : Ref[Array[Int]] = @ref.new(
-  Array::new(capacity=16),
+let tc_left_cache_best_edges_ref : Ref[Array[Int]] = @ref.new(
+  Array::new(capacity=256),
 )
 
 ///|
-let tc_scratch_left_best_prevs_ref : Ref[Array[Int]] = @ref.new(
-  Array::new(capacity=16),
+let tc_left_cache_best_prevs_ref : Ref[Array[Int]] = @ref.new(
+  Array::new(capacity=256),
 )
 
 ///|
@@ -153,9 +153,14 @@ pub fn decode_viterbi_token_count_with_precomputed(
   let scratch_prev_indexes = tc_scratch_prev_indexes_ref.val
   let scratch_prev_best_costs = tc_scratch_prev_best_costs_ref.val
   let scratch_prev_right_ids = tc_scratch_prev_right_ids_ref.val
-  let scratch_left_ids = tc_scratch_left_ids_ref.val
-  let scratch_left_best_edges = tc_scratch_left_best_edges_ref.val
-  let scratch_left_best_prevs = tc_scratch_left_best_prevs_ref.val
+  let left_cache_stamps = tc_left_cache_stamps_ref.val
+  let left_cache_best_edges = tc_left_cache_best_edges_ref.val
+  let left_cache_best_prevs = tc_left_cache_best_prevs_ref.val
+  let connection_id_count = @scorer.connection_id_count()
+  ensure_length_fill(left_cache_stamps, connection_id_count, 0)
+  ensure_length_fill(left_cache_best_edges, connection_id_count, 0)
+  ensure_length_fill(left_cache_best_prevs, connection_id_count, -1)
+  let mut cache_epoch = 1
   node_right_ids.truncate(0)
   node_best_costs.truncate(0)
   node_best_prevs.truncate(0)
@@ -177,9 +182,14 @@ pub fn decode_viterbi_token_count_with_precomputed(
     scratch_prev_indexes.truncate(0)
     scratch_prev_best_costs.truncate(0)
     scratch_prev_right_ids.truncate(0)
-    scratch_left_ids.truncate(0)
-    scratch_left_best_edges.truncate(0)
-    scratch_left_best_prevs.truncate(0)
+    if cache_epoch >= @int.max_value - 1 {
+      for i in 0..<connection_id_count {
+        left_cache_stamps[i] = 0
+      }
+      cache_epoch = 1
+    } else {
+      cache_epoch = cache_epoch + 1
+    }
     let mut cursor = head
     while cursor >= 0 {
       scratch_prev_indexes.push(cursor)
@@ -236,18 +246,13 @@ pub fn decode_viterbi_token_count_with_precomputed(
         run_len,
       )
       let cand_word_cost = cand.word_cost
-      let mut cache_idx = -1
-      for j in 0..<scratch_left_ids.length() {
-        if scratch_left_ids[j] == cand.left_id {
-          cache_idx = j
-          break
-        }
-      }
       let mut best_edge_cost = @int.max_value
       let mut best_prev = -1
-      if cache_idx >= 0 {
-        best_edge_cost = scratch_left_best_edges[cache_idx]
-        best_prev = scratch_left_best_prevs[cache_idx]
+      if cand.left_id >= 0 &&
+        cand.left_id < connection_id_count &&
+        left_cache_stamps[cand.left_id] == cache_epoch {
+        best_edge_cost = left_cache_best_edges[cand.left_id]
+        best_prev = left_cache_best_prevs[cand.left_id]
       } else {
         for i in 0..<scratch_prev_indexes.length() {
           let edge_cost = scratch_prev_best_costs[i] +
@@ -257,9 +262,11 @@ pub fn decode_viterbi_token_count_with_precomputed(
             best_prev = scratch_prev_indexes[i]
           }
         }
-        scratch_left_ids.push(cand.left_id)
-        scratch_left_best_edges.push(best_edge_cost)
-        scratch_left_best_prevs.push(best_prev)
+        if cand.left_id >= 0 && cand.left_id < connection_id_count {
+          left_cache_stamps[cand.left_id] = cache_epoch
+          left_cache_best_edges[cand.left_id] = best_edge_cost
+          left_cache_best_prevs[cand.left_id] = best_prev
+        }
       }
       if best_prev >= 0 {
         let best_cost = best_edge_cost + cand_word_cost + emission_adj

@@ -10,6 +10,8 @@ pub fn bos_connection_index() -> Int
 
 pub fn connection_cost(Int, Int) -> Int
 
+pub fn connection_id_count() -> Int
+
 pub fn connection_index_or_missing(Int) -> Int
 
 pub fn emission_adjustment(@types.POS, @types.CharClass, Int, Int) -> Int

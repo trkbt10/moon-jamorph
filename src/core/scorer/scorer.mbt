@@ -14,6 +14,11 @@ pub fn bos_connection_index() -> Int {
 }
 
 ///|
+pub fn connection_id_count() -> Int {
+  @runtime.connection_id_count()
+}
+
+///|
 fn hiragana_length_penalty(token_len : Int, run_len : Int) -> Int {
   let run_len = if run_len > 0 { run_len } else { token_len }
   if token_len <= 1 {

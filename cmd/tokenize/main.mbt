@@ -1,5 +1,5 @@
 ///|
-extern "c" fn c_getchar() -> Int = "getchar"
+extern "c" fn c_getchar_unlocked() -> Int = "getchar_unlocked"
 
 ///|
 type OutputMode = Int
@@ -183,7 +183,7 @@ fn main {
   let mut sentence_total = 0
   let mut token_total = 0
   while true {
-    let ch = c_getchar()
+    let ch = c_getchar_unlocked()
     if ch < 0 {
       break
     }
