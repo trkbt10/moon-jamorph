@@ -175,6 +175,7 @@ Sentences_per_second: [628564.40,655189.58,669694.52]
 - ネイティブCLIは外付け MeCab 辞書（`--dicdir`）を利用します。
 - Web/npm は `.dic.bin` を実行時ロードします。
 - `tools/dict-compiler/scripts/build_*_generated.sh` は廃止され、実行するとエラー終了します。
+- Web向け辞書生成は `tools/dict-compiler/scripts/build_web_dic_artifacts.mjs` に統一されています。
 
 ## Wasm / npm 配布
 
