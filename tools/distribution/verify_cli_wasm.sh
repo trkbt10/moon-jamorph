@@ -15,12 +15,36 @@ find_mecab_dicdirs() {
     out+=("${MECAB_DICDIR}")
   fi
 
+  if command -v mecab >/dev/null 2>&1; then
+    local mecab_info dicdir_from_mecab filename_from_mecab
+    mecab_info="$(mecab -D 2>/dev/null || true)"
+    dicdir_from_mecab="$(
+      printf '%s\n' "${mecab_info}" | sed -n 's/^dicdir:[[:space:]]*//p' | head -n 1
+    )"
+    if [[ -n "${dicdir_from_mecab}" && -d "${dicdir_from_mecab}" ]]; then
+      out+=("${dicdir_from_mecab}")
+    fi
+    filename_from_mecab="$(
+      printf '%s\n' "${mecab_info}" | sed -n 's/^filename:[[:space:]]*//p' | head -n 1
+    )"
+    if [[ -n "${filename_from_mecab}" ]]; then
+      local filename_dir
+      filename_dir="$(dirname "${filename_from_mecab}")"
+      if [[ -d "${filename_dir}" ]]; then
+        out+=("${filename_dir}")
+      fi
+    fi
+  fi
+
   if command -v mecab-config >/dev/null 2>&1; then
     local base
     base="$(mecab-config --dicdir 2>/dev/null || true)"
     if [[ -n "${base}" ]]; then
+      if [[ -d "${base}" ]]; then
+        out+=("${base}")
+      fi
       local name
-      for name in unidic unidic-lite ipadic-utf8 ipadic; do
+      for name in debian unidic unidic-lite ipadic-utf8 ipadic; do
         if [[ -d "${base}/${name}" ]]; then
           out+=("${base}/${name}")
         fi
@@ -30,12 +54,23 @@ find_mecab_dicdirs() {
 
   local p
   for p in \
+    /opt/homebrew/lib/mecab/dic/debian \
     /opt/homebrew/lib/mecab/dic/unidic \
     /opt/homebrew/lib/mecab/dic/ipadic-utf8 \
     /opt/homebrew/lib/mecab/dic/ipadic \
+    /usr/lib/mecab/dic/debian \
+    /usr/lib/mecab/dic/unidic \
+    /usr/lib/mecab/dic/ipadic-utf8 \
+    /usr/lib/mecab/dic/ipadic \
+    /usr/lib/x86_64-linux-gnu/mecab/dic/debian \
     /usr/lib/x86_64-linux-gnu/mecab/dic/unidic \
     /usr/lib/x86_64-linux-gnu/mecab/dic/ipadic-utf8 \
     /usr/lib/x86_64-linux-gnu/mecab/dic/ipadic \
+    /usr/share/mecab/dic/debian \
+    /usr/share/mecab/dic/unidic \
+    /usr/share/mecab/dic/ipadic-utf8 \
+    /usr/share/mecab/dic/ipadic \
+    /var/lib/mecab/dic/debian \
     /var/lib/mecab/dic/unidic \
     /var/lib/mecab/dic/ipadic-utf8 \
     /var/lib/mecab/dic/ipadic; do
@@ -115,7 +150,9 @@ if [[ -z "${selected_dicdir}" ]]; then
   echo "[verify] failed to find a working mecab dictionary directory"
   echo "[verify] candidates:"
   find_mecab_dicdirs | sed 's/^/  - /'
-  echo "[verify] required: unidic/unidic-lite/ipadic-utf8/ipadic"
+  echo "[verify] required: debian/unidic/unidic-lite/ipadic-utf8/ipadic"
+  echo "[verify] mecab -D:"
+  mecab -D 2>/dev/null || true
   exit 1
 fi
 
