@@ -214,8 +214,94 @@ fi
 
 echo "[verify] wasm + dic.bin smoke"
 "${ROOT_DIR}/tools/distribution/build_wasm_npm.sh"
-node "${ROOT_DIR}/npm/micado-wasm/demo/node-smoke.mjs"
-node "${ROOT_DIR}/npm/micado-wasm/demo/node-dic-smoke.mjs"
+if ! command -v node >/dev/null 2>&1; then
+  echo "[verify] node command is not available"
+  exit 1
+fi
+node --input-type=module <<'NODE'
+import { createMicadoWasm, createTokenizer } from "./npm/micado-wasm/dist/index.js";
+
+const sentence = "すもももももももものうち";
+const wasm = await createMicadoWasm({
+  nanoProfile: "tiny",
+  miniProfile: "mini",
+  compressed: true,
+});
+const wasmNano = wasm.tokenizeNano(sentence);
+const wasmMini = wasm.tokenizeMini(sentence);
+console.log(`wasm-nano=${wasmNano.map((t) => t.surface).join("|")}`);
+console.log(`wasm-mini=${wasmMini.map((t) => t.surface).join("|")}`);
+
+const tokenizer = await createTokenizer({
+  profile: "tiny",
+  compressed: true,
+});
+const dicTokens = tokenizer.tokenize(sentence);
+console.log(`dic-tiny=${dicTokens.map((t) => t.surface).join("|")}`);
+console.log(`profile=${tokenizer.profile} entries=${tokenizer.stats.entryCount}`);
+
+const dicCompact = dicTokens.map((t) => ({
+  surface: t.surface,
+  pos_detail: t.pos_detail,
+  start_pos: t.start_pos,
+  end_pos: t.end_pos,
+}));
+if (JSON.stringify(wasmNano) !== JSON.stringify(dicCompact)) {
+  throw new Error(
+    "createMicadoWasm(tokenizeNano) must match createTokenizer(profile=tiny)",
+  );
+}
+const miniTokenizer = await createTokenizer({ profile: "mini", compressed: true });
+const miniCompact = miniTokenizer.tokenize(sentence).map((t) => ({
+  surface: t.surface,
+  pos_detail: t.pos_detail,
+  start_pos: t.start_pos,
+  end_pos: t.end_pos,
+}));
+if (JSON.stringify(wasmMini) !== JSON.stringify(miniCompact)) {
+  throw new Error(
+    "createMicadoWasm(tokenizeMini) must match createTokenizer(profile=mini)",
+  );
+}
+console.log("unified=nano-ok");
+console.log("unified=mini-ok");
+NODE
+node --input-type=module <<'NODE'
+import { readFile } from "node:fs/promises";
+import { resolve } from "node:path";
+import { createTokenizer } from "./npm/micado-wasm/dist/index.js";
+
+const medium = await createTokenizer({ profile: "medium", compressed: true });
+const full = await createTokenizer({ profile: "full", compressed: true });
+
+const sentence = (
+  await readFile(resolve(process.cwd(), "npm/micado-wasm/demo/smoke-sentence.txt"), "utf8")
+).trim();
+const mediumTokens = medium.tokenize(sentence);
+const fullTokens = full.tokenize(sentence);
+
+if (full.stats.entryCount < 300000) {
+  throw new Error(`full profile too small: ${full.stats.entryCount}`);
+}
+if ((full.stats.connectionIdCount ?? 0) < 100) {
+  throw new Error(`connection matrix ids too small: ${full.stats.connectionIdCount}`);
+}
+
+const fullSurfaces = fullTokens.map((t) => t.surface);
+for (const required of ["吾輩", "猫", "名前", "無い"]) {
+  if (!fullSurfaces.includes(required)) {
+    throw new Error(`missing required surface: ${required} got=${JSON.stringify(fullSurfaces)}`);
+  }
+}
+if (fullSurfaces.some((s) => s.includes("�"))) {
+  throw new Error(`mojibake detected: ${JSON.stringify(fullSurfaces)}`);
+}
+
+console.log(`medium entries=${medium.stats.entryCount} tokens=${mediumTokens.length}`);
+console.log(`full entries=${full.stats.entryCount} tokens=${fullTokens.length}`);
+console.log(fullTokens.map((t) => `${t.surface}:${t.pos}`).join("|"));
+console.log("verification=ok");
+NODE
 echo "[verify] wasm=ok"
 
 echo "[verify] all checks passed"

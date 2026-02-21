@@ -56,16 +56,17 @@ jobs:
           moon update
           tools/distribution/build_wasm_npm.sh
 
+      - name: Install Demo Dependencies
+        run: |
+          npm --prefix npm/micado-wasm ci
+
       - name: Prepare site directory
         run: |
           rm -rf _site
-          mkdir -p _site
-          cp npm/micado-wasm/index.html _site/
-          cp npm/micado-wasm/index.mjs _site/
-          cp npm/micado-wasm/demo.mjs _site/
-          cp npm/micado-wasm/examples.mjs _site/
-          cp npm/micado-wasm/dic-bin.mjs _site/
-          cp -R npm/micado-wasm/dist _site/
+          (
+            cd npm/micado-wasm
+            npx vite build --outDir ../../_site --emptyOutDir
+          )
           touch _site/.nojekyll
 
       - name: Configure Pages
