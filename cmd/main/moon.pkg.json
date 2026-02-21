@@ -3,6 +3,10 @@
   "import": [
     "moonbitlang/core/env",
     {
+      "path": "trkbt10/micado_mbt/src/cli/mecab",
+      "alias": "mecab_cli"
+    },
+    {
       "path": "moonbitlang/core/buffer",
       "alias": "buffer"
     },

@@ -39,12 +39,12 @@ fn choose_heredoc_delim(input : String) -> String {
 fn build_mecab_shell_command(
   input : String,
   dicdir : String,
-  format : OutputFormat,
+  format : @mecab_cli.OutputFormat,
 ) -> String {
   let delim = choose_heredoc_delim(input)
   let dicdir_q = shell_quote_single(dicdir)
   let mecab_cmd = match format {
-    x if x == FORMAT_WAKATI => "mecab -O wakati -d \{dicdir_q}"
+    x if x == @mecab_cli.FORMAT_WAKATI => "mecab -O wakati -d \{dicdir_q}"
     _ => "mecab -d \{dicdir_q}"
   }
   "(set -o pipefail) >/dev/null 2>&1 && set -o pipefail\ncharset=\"$(grep -E \"^[[:space:]]*config-charset[[:space:]]*=\" \{dicdir_q}/dicrc 2>/dev/null | head -n1 | cut -d= -f2 | tr -d \"[:space:]\")\"\nif [ -z \"$charset\" ]; then\n  charset=\"$(mecab -D -d \{dicdir_q} 2>/dev/null | grep -E \"^charset:\" | head -n1 | cut -d: -f2- | tr -d \"[:space:]\")\"\nfi\nif [ -z \"$charset\" ]; then\n  charset=\"UTF-8\"\nfi\ncat <<'\{delim}' | (if printf '%s' \"$charset\" | grep -Eiq '^utf-?8$'; then cat; else if command -v iconv >/dev/null 2>&1; then iconv -f UTF-8 -t \"$charset\"; else echo \"iconv is required for non-UTF-8 dictionary charset: $charset\" >&2; exit 86; fi; fi) | \{mecab_cmd} | (if printf '%s' \"$charset\" | grep -Eiq '^utf-?8$'; then cat; else if command -v iconv >/dev/null 2>&1; then iconv -f \"$charset\" -t UTF-8//IGNORE; else echo \"iconv is required for non-UTF-8 dictionary charset: $charset\" >&2; exit 86; fi; fi)\n\{input}\n\{delim}\n"
@@ -81,7 +81,7 @@ fn run_shell_capture_utf8(command : String) -> (String, Int) {
 fn run_mecab_with_dicdir(
   input : String,
   dicdir : String,
-  format : OutputFormat,
+  format : @mecab_cli.OutputFormat,
 ) -> (String, String?) {
   let command = build_mecab_shell_command(input, dicdir, format)
   let (stdout, status) = run_shell_capture_utf8(command)

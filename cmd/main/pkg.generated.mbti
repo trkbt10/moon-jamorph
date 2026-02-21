@@ -6,10 +6,8 @@ package "trkbt10/micado_mbt/cmd/main"
 // Errors
 
 // Types and methods
-type CLIOptions
-
-type OutputToken
 
 // Type aliases
 
 // Traits
+

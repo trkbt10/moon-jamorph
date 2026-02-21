@@ -2,7 +2,7 @@
 fn run_mecab_with_dicdir(
   _input : String,
   _dicdir : String,
-  _format : OutputFormat,
+  _format : @mecab_cli.OutputFormat,
 ) -> (String, String?) {
   let _ = @buffer.new(size_hint=0)
   (

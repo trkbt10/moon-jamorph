@@ -41,6 +41,7 @@
 ├── src/
 │   ├── scanner/utf16, scanner/utf8
 │   ├── core/da_trie, lattice, scorer, unknown, viterbi
+│   ├── cli/mecab     (MeCab互換CLIロジック)
 │   ├── tokenizer
 │   └── types
 ├── cmd/
@@ -59,7 +60,23 @@
 └── npm/micado-wasm
 ```
 
+運用境界:
+
+- ライブラリ層: `src/**` + トップレベルパッケージ（`trkbt10/micado_mbt`）
+- CLI層: `src/cli/**` + `cmd/**`（`cmd/main` は MeCab 互換の `--dicdir` フロー）
+
 ## 主要 API
+
+トップレベル（`trkbt10/micado_mbt`）:
+
+- `new_tokenizer()`
+- `tokenize(String)`
+- `tokenize_utf8(BytesView)`
+- `token_count(String)`
+- `EDITION_NANO` / `EDITION_MINI` / `EDITION_STANDARD` / `EDITION_FULL`
+- `MODE_NORMAL` / `MODE_SEARCH`
+
+ライブラリ利用時は、まずトップレベルを入口にし、必要に応じて `src/tokenizer` / `src/types` を直接使ってください。
 
 `src/tokenizer`:
 
@@ -204,6 +221,36 @@ Sentences_per_second_without_startup_estimate: [477149.70,525922.69,548189.76]
 - Web/npm は `.dic.bin` を実行時ロードします。
 - `tools/dict-compiler/scripts/build_*_generated.sh` は廃止され、実行するとエラー終了します。
 - Web向け辞書生成は `tools/dict-compiler/scripts/build_web_dic_artifacts.mjs` に統一されています。
+
+## 配布モデル（推奨）
+
+配布は次の2系統に分けます。
+
+- Moon package（軽量）: CLI/コアコードのみ。MeCab互換CLIは `--dicdir` で外付け辞書を使う
+- Wasm配布（辞書同梱）: `npm/micado-wasm/dist` をベースに `.dic.bin(.deflate)` を含めて配る
+
+一括生成:
+
+```sh
+tools/distribution/package_release_assets.sh
+```
+
+GitHub Actions:
+
+- `.github/workflows/release-assets.yml`
+  - `workflow_dispatch` または `v*` タグ push で実行
+  - `_build/release/*` を Artifact / GitHub Release に添付
+  - `moon publish` は実行しない
+
+生成物:
+
+- `_build/release/*-moon-module-v<version>.zip`
+- `_build/release/micado-wasm-with-dic-v<version>.tar.gz`
+
+オプション:
+
+- `WASM_RELEASE_PROFILES=tiny,mini,medium` で同梱プロファイルを制限
+- `WASM_RELEASE_INCLUDE_RAW_DIC=1` で `.dic.bin`（非deflate）も同梱
 
 ## Wasm / npm 配布
 

@@ -1,0 +1,33 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "trkbt10/micado_mbt/src/cli/mecab"
+
+// Values
+pub const FORMAT_JSON : Int = 1
+
+pub const FORMAT_MECAB : Int = 0
+
+pub const FORMAT_WAKATI : Int = 2
+
+pub fn parse_cli_args(Array[String]) -> (CLIOptions, String?, Bool)
+
+pub fn render_json_from_mecab_output(String, CLIOptions) -> String
+
+pub fn trim_trailing_newlines(String) -> String
+
+pub fn usage_lines() -> Array[String]
+
+// Errors
+
+// Types and methods
+pub(all) struct CLIOptions {
+  format : Int
+  dictionary_source : String
+  requested_dicdir : String?
+  text_from_args : String
+}
+
+// Type aliases
+pub type OutputFormat = Int
+
+// Traits
+

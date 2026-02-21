@@ -1,20 +1,37 @@
 ///|
-pub fn fib(n : Int) -> Int64 {
-  loop (n, 0L, 1L) {
-    (0, _, b) => b
-    (i, a, b) => continue (i - 1, b, a + b)
-  }
+pub const EDITION_NANO : Int = @tok.EDITION_NANO
+
+///|
+pub const EDITION_MINI : Int = @tok.EDITION_MINI
+
+///|
+pub const EDITION_STANDARD : Int = @tok.EDITION_STANDARD
+
+///|
+pub const EDITION_FULL : Int = @tok.EDITION_FULL
+
+///|
+pub const MODE_NORMAL : Int = @tok.MODE_NORMAL
+
+///|
+pub const MODE_SEARCH : Int = @tok.MODE_SEARCH
+
+///|
+pub fn new_tokenizer() -> @tok.Tokenizer {
+  @tok.Tokenizer::new()
 }
 
 ///|
-/// data is a labelled argument without default value having type Array[Int]
-/// start is an optional labelled argument with default value 0 having type Int
-/// length is an optional labelled argument without default value having type Option[Int]
-pub fn sum(data~ : Array[Int], start? : Int = 0, length? : Int) -> Int {
-  let end = if length is Some(length) { start + length } else { data.length() }
-  for i = start, sum = 0; i < end; i = i + 1, sum = sum + data[i] {
+pub fn tokenize(input : String) -> Array[@types.Morpheme] {
+  @tok.tokenize(input)
+}
 
-  } else {
-    sum
-  }
+///|
+pub fn tokenize_utf8(input : BytesView) -> Array[@types.Morpheme] {
+  @tok.tokenize_utf8(input)
+}
+
+///|
+pub fn token_count(input : String) -> Int {
+  @tok.token_count(input)
 }

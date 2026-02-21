@@ -1,10 +1,31 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "trkbt10/micado_mbt"
 
-// Values
-pub fn fib(Int) -> Int64
+import {
+  "trkbt10/micado_mbt/src/tokenizer",
+  "trkbt10/micado_mbt/src/types",
+}
 
-pub fn sum(data~ : Array[Int], start? : Int, length? : Int) -> Int
+// Values
+pub const EDITION_FULL : Int = 3
+
+pub const EDITION_MINI : Int = 1
+
+pub const EDITION_NANO : Int = 0
+
+pub const EDITION_STANDARD : Int = 2
+
+pub const MODE_NORMAL : Int = 0
+
+pub const MODE_SEARCH : Int = 1
+
+pub fn new_tokenizer() -> @tokenizer.Tokenizer
+
+pub fn token_count(String) -> Int
+
+pub fn tokenize(String) -> Array[@types.Morpheme]
+
+pub fn tokenize_utf8(BytesView) -> Array[@types.Morpheme]
 
 // Errors
 
@@ -13,3 +34,4 @@ pub fn sum(data~ : Array[Int], start? : Int, length? : Int) -> Int
 // Type aliases
 
 // Traits
+

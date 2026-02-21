@@ -1,0 +1,71 @@
+name: Build Release Assets
+
+on:
+  workflow_dispatch:
+    inputs:
+      wasm_release_profiles:
+        description: "Comma-separated dictionary profiles (tiny,mini,medium,micado_web_small,full)"
+        required: false
+        default: "tiny,mini,medium,micado_web_small,full"
+      include_raw_dic:
+        description: "Include raw .dic.bin files in addition to .dic.bin.deflate"
+        required: false
+        type: boolean
+        default: false
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-assets-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-release-assets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      MOONBIT_VERSION: "latest"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s -- "$MOONBIT_VERSION"
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+          "$HOME/.moon/bin/moon" version --all
+
+      - name: Update MoonBit dependencies
+        run: moon update
+
+      - name: Build release assets (no moon publish)
+        env:
+          WASM_RELEASE_PROFILES: ${{ github.event.inputs.wasm_release_profiles || 'tiny,mini,medium,micado_web_small,full' }}
+          WASM_RELEASE_INCLUDE_RAW_DIC: ${{ github.event.inputs.include_raw_dic && '1' || '0' }}
+        run: |
+          tools/distribution/package_release_assets.sh
+          ls -lh _build/release
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-assets-${{ github.ref_name }}
+          path: _build/release/*
+          if-no-files-found: error
+
+      - name: Attach assets to GitHub Release (tag only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: _build/release/*
+          generate_release_notes: true
