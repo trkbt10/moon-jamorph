@@ -18,3 +18,14 @@ test "top-level API: new_tokenizer supports builder-style use" {
   assert_true(tokens.length() > 0)
   inspect(tokens[0].surface, content="吾輩")
 }
+
+///|
+test "top-level API: constraints and nbest wrappers are available" {
+  let constrained = tokenize_with_options("龘龘", {
+    constraint: { ..@types.ParseConstraint::none(), must_break_positions: [1] },
+  })
+  inspect(constrained.map(t => t.surface), content="[\"龘\", \"龘\"]")
+  let nbest = tokenize_nbest("龘龘龘", 2)
+  assert_eq(nbest.length(), 2)
+  inspect(nbest[0].map(t => t.surface), content="[\"龘龘龘\"]")
+}

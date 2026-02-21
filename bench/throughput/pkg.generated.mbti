@@ -2,6 +2,8 @@
 package "trkbt10/micado_mbt/bench/throughput"
 
 // Values
+pub fn benchmark_tokenizer_constraints_nbest(String, count? : UInt) -> String
+
 pub fn benchmark_tokenizer_throughput(String, count? : UInt) -> String
 
 // Errors
@@ -11,3 +13,4 @@ pub fn benchmark_tokenizer_throughput(String, count? : UInt) -> String
 // Type aliases
 
 // Traits
+

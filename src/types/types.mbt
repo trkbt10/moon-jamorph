@@ -77,6 +77,50 @@ pub(all) struct Morpheme {
 }
 
 ///|
+pub(all) struct SpanConstraint {
+  start_pos : Int
+  end_pos : Int
+}
+
+///|
+pub(all) struct ParseConstraint {
+  must_break_positions : Array[Int]
+  forbid_break_positions : Array[Int]
+  must_cover_spans : Array[SpanConstraint]
+  allowed_pos : Array[POS]
+  disallowed_pos : Array[POS]
+  allow_unknown : Bool
+}
+
+///|
+pub fn ParseConstraint::none() -> ParseConstraint {
+  {
+    must_break_positions: [],
+    forbid_break_positions: [],
+    must_cover_spans: [],
+    allowed_pos: [],
+    disallowed_pos: [],
+    allow_unknown: true,
+  }
+}
+
+///|
+pub(all) struct ParseOptions {
+  constraint : ParseConstraint
+}
+
+///|
+pub fn ParseOptions::default() -> ParseOptions {
+  { constraint: ParseConstraint::none() }
+}
+
+///|
+pub(all) struct NBestResult {
+  morphemes : Array[Morpheme]
+  total_cost : Int
+}
+
+///|
 pub fn chars_slice(chars : Array[Char], start : Int, end : Int) -> String {
   let b = StringBuilder::new(size_hint=end - start)
   for i in start..<end {

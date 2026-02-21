@@ -5,6 +5,10 @@
       "path": "trkbt10/micado_mbt/src/tokenizer",
       "alias": "tok"
     },
+    {
+      "path": "trkbt10/micado_mbt/src/types",
+      "alias": "types"
+    },
     "moonbitlang/core/env",
     "moonbitlang/core/buffer",
     "moonbitlang/core/encoding/utf8"

@@ -49,6 +49,11 @@ pub(all) struct Morpheme {
   end_pos : Int
 }
 
+pub(all) struct NBestResult {
+  morphemes : Array[Morpheme]
+  total_cost : Int
+}
+
 pub(all) enum POS {
   BosEos
   NounGeneral
@@ -60,6 +65,26 @@ pub(all) enum POS {
 pub fn POS::label(Self) -> String
 pub impl Eq for POS
 pub impl Show for POS
+
+pub(all) struct ParseConstraint {
+  must_break_positions : Array[Int]
+  forbid_break_positions : Array[Int]
+  must_cover_spans : Array[SpanConstraint]
+  allowed_pos : Array[POS]
+  disallowed_pos : Array[POS]
+  allow_unknown : Bool
+}
+pub fn ParseConstraint::none() -> Self
+
+pub(all) struct ParseOptions {
+  constraint : ParseConstraint
+}
+pub fn ParseOptions::default() -> Self
+
+pub(all) struct SpanConstraint {
+  start_pos : Int
+  end_pos : Int
+}
 
 pub(all) struct TokenCandidate {
   start_pos : Int
@@ -75,3 +100,4 @@ pub(all) struct TokenCandidate {
 // Type aliases
 
 // Traits
+

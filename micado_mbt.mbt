@@ -27,8 +27,55 @@ pub fn tokenize(input : String) -> Array[@types.Morpheme] {
 }
 
 ///|
+pub fn tokenize_with_options(
+  input : String,
+  options : @types.ParseOptions,
+) -> Array[@types.Morpheme] {
+  @tok.tokenize_with_options(input, options)
+}
+
+///|
+pub fn tokenize_nbest(input : String, n : Int) -> Array[Array[@types.Morpheme]] {
+  @tok.tokenize_nbest(input, n)
+}
+
+///|
+pub fn tokenize_nbest_with_options(
+  input : String,
+  n : Int,
+  options : @types.ParseOptions,
+) -> Array[@types.NBestResult] {
+  @tok.tokenize_nbest_with_options(input, n, options)
+}
+
+///|
 pub fn tokenize_utf8(input : BytesView) -> Array[@types.Morpheme] {
   @tok.tokenize_utf8(input)
+}
+
+///|
+pub fn tokenize_utf8_with_options(
+  input : BytesView,
+  options : @types.ParseOptions,
+) -> Array[@types.Morpheme] {
+  @tok.tokenize_utf8_with_options(input, options)
+}
+
+///|
+pub fn tokenize_utf8_nbest(
+  input : BytesView,
+  n : Int,
+) -> Array[Array[@types.Morpheme]] {
+  @tok.tokenize_utf8_nbest(input, n)
+}
+
+///|
+pub fn tokenize_utf8_nbest_with_options(
+  input : BytesView,
+  n : Int,
+  options : @types.ParseOptions,
+) -> Array[@types.NBestResult] {
+  @tok.tokenize_utf8_nbest_with_options(input, n, options)
 }
 
 ///|

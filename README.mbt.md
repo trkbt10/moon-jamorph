@@ -8,6 +8,8 @@
 ## できること
 
 - `src/tokenizer` で日本語テキストを形態素に分割
+- 制約つき解析（境界制約 / 品詞制約 / 未知語許可制御）
+- N-best 解（`tokenize_nbest*`）の取得
 - `cmd/main` で MeCab 辞書ディレクトリ（`--dicdir`）を使った CLI 実行
 - `npm/micado-wasm` で Wasm + `.dic.bin` のブラウザ向け配布
 
@@ -27,8 +29,8 @@
 | 連接表の実装 | 2次元 Table（圧縮ID） | 2次元 Table | オートマトン | 2次元 Table? | 連接表なし? |
 | 品詞の階層 | 簡易列挙型 + mecab_feature | 無制限多階層品詞 | 無制限多階層品詞 | 2段階固定 | 品詞という概念なし? |
 | 未知語処理 | 字種（複数候補生成） | 字種（動作定義を変更可能） | 字種（変更不可能） | 字種（変更不可能） | - |
-| 制約つき解析 | 不可能 | 可能 | 2.4.0 で可能 | 不可能 | 不可能 |
-| N-best 解 | 不可能 | 可能 | 不可能 | 不可能 | 不可能 |
+| 制約つき解析 | 可能 | 可能 | 2.4.0 で可能 | 不可能 | 不可能 |
+| N-best 解 | 可能 | 可能 | 不可能 | 不可能 | 不可能 |
 
 補足:
 - この比較は MeCab 作者サイト等で知られている実装比較を要約したものです。
@@ -71,7 +73,13 @@
 
 - `new_tokenizer()`
 - `tokenize(String)`
+- `tokenize_with_options(String, ParseOptions)`
+- `tokenize_nbest(String, Int)`
+- `tokenize_nbest_with_options(String, Int, ParseOptions)`
 - `tokenize_utf8(BytesView)`
+- `tokenize_utf8_with_options(BytesView, ParseOptions)`
+- `tokenize_utf8_nbest(BytesView, Int)`
+- `tokenize_utf8_nbest_with_options(BytesView, Int, ParseOptions)`
 - `token_count(String)`
 - `EDITION_NANO` / `EDITION_MINI` / `EDITION_STANDARD` / `EDITION_FULL`
 - `MODE_NORMAL` / `MODE_SEARCH`
@@ -85,13 +93,22 @@
 - `Tokenizer::set_mode(...)`
 - `Tokenizer::set_use_lexmatch_scanner(...)`
 - `Tokenizer::tokenize(String)`
+- `Tokenizer::tokenize_with_options(String, ParseOptions)`
+- `Tokenizer::tokenize_nbest(String, Int)`
+- `Tokenizer::tokenize_nbest_with_options(String, Int, ParseOptions)`
 - `Tokenizer::tokenize_utf8(BytesView)`
+- `Tokenizer::tokenize_utf8_with_options(BytesView, ParseOptions)`
+- `Tokenizer::tokenize_utf8_nbest(BytesView, Int)`
+- `Tokenizer::tokenize_utf8_nbest_with_options(BytesView, Int, ParseOptions)`
 - `EDITION_NANO` / `EDITION_MINI` / `EDITION_STANDARD` / `EDITION_FULL`
   - 互換のため残しています（`src/dict` 廃止後は同一挙動）。
 
 `src/types`:
 
 - `Morpheme { surface, pos, pos_detail, mecab_feature, start_pos, end_pos }`
+- `ParseConstraint { must_break_positions, forbid_break_positions, must_cover_spans, allowed_pos, disallowed_pos, allow_unknown }`
+- `ParseOptions { constraint }`
+- `NBestResult { morphemes, total_cost }`
 
 ## 開発用コマンド
 
@@ -142,7 +159,30 @@ moon run --target native cmd/main -- -d /path/to/mecab/dic -O json "太郎は走
 内部 tokenizer を stdin から実行する CLI（`cmd/tokenize`）:
 
 ```sh
-cat bench/corpus/aozora_openings.txt | moon run --target native cmd/tokenize -- -e full -O count
+cat bench/corpus/aozora_openings.txt | moon run --target native cmd/tokenize --
+cat bench/corpus/aozora_openings.txt | moon run --target native cmd/tokenize -- -O wakati
+```
+
+`cmd/tokenize` は MeCab 互換寄りのオプション名に対応しています（互換サブセット）。
+
+- `-O, --output-format-type <type>`: `mecab`（既定）/ `wakati` / `none`（`count` は独自拡張）
+- `-N, --nbest <n>`（`--nbest=<n>` も可）: N-best 出力数
+- `-d, --dicdir <dir>`（`--dicdir=<dir>` も可）: 互換用に受理（現状は未使用）
+- `--no-unknown`: 未知語トークンを含む経路を拒否
+- `--must-break <csv>`: 指定位置（文字インデックス）に必須境界を要求
+- `--forbid-break <csv>`: 指定位置（文字インデックス）に境界を禁止
+- `--must-cover-span <csv>`: 必須トークン span を要求（`start:end` 形式）
+- `--allow-pos <csv>`: 許可 POS を制限（`noun-general,particle,...`）
+- `--disallow-pos <csv>`: 禁止 POS を指定
+
+例:
+
+```sh
+printf '太郎は走る\n' | moon run --target native cmd/tokenize --
+printf '太郎は走る\n' | moon run --target native cmd/tokenize -- -O wakati
+printf '龘龘龘\n' | moon run --target native cmd/tokenize -- --output-format-type=wakati --nbest=3 --must-break 1
+printf '龘龘\n' | moon run --target native cmd/tokenize -- -O wakati --must-cover-span 0:2
+printf '迅速\n' | moon run --target native cmd/tokenize -- -O count --allow-pos noun-general
 ```
 
 ## 軽量ベンチ比較

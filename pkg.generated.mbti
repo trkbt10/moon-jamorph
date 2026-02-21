@@ -25,7 +25,19 @@ pub fn token_count(String) -> Int
 
 pub fn tokenize(String) -> Array[@types.Morpheme]
 
+pub fn tokenize_nbest(String, Int) -> Array[Array[@types.Morpheme]]
+
+pub fn tokenize_nbest_with_options(String, Int, @types.ParseOptions) -> Array[@types.NBestResult]
+
 pub fn tokenize_utf8(BytesView) -> Array[@types.Morpheme]
+
+pub fn tokenize_utf8_nbest(BytesView, Int) -> Array[Array[@types.Morpheme]]
+
+pub fn tokenize_utf8_nbest_with_options(BytesView, Int, @types.ParseOptions) -> Array[@types.NBestResult]
+
+pub fn tokenize_utf8_with_options(BytesView, @types.ParseOptions) -> Array[@types.Morpheme]
+
+pub fn tokenize_with_options(String, @types.ParseOptions) -> Array[@types.Morpheme]
 
 // Errors
 
