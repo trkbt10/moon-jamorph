@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "username/micado_mbt/tools/dict-compiler/compressor"
+package "trkbt10/micado_mbt/tools/dict-compiler/compressor"
 
 // Values
 pub fn build_id_to_compact(Array[Int], Int) -> Array[Int]
@@ -13,4 +13,3 @@ pub fn compact_ids_preserve_order(Array[Int]) -> Array[Int]
 // Type aliases
 
 // Traits
-

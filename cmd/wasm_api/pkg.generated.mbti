@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "username/micado_mbt/cmd/wasm_api"
+package "trkbt10/micado_mbt/cmd/wasm_api"
 
 // Values
 pub fn dictionary_connection_id_count() -> Int
@@ -33,4 +33,3 @@ pub fn tokenize_nano_tsv() -> Int
 // Type aliases
 
 // Traits
-

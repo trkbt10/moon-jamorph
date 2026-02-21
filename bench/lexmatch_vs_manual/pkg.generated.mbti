@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "username/micado_mbt/bench/lexmatch_vs_manual"
+package "trkbt10/micado_mbt/bench/lexmatch_vs_manual"
 
 // Values
 pub fn benchmark_scanner(String, count? : UInt) -> String
@@ -11,4 +11,3 @@ pub fn benchmark_scanner(String, count? : UInt) -> String
 // Type aliases
 
 // Traits
-

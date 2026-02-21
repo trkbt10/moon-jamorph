@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "username/micado_mbt/cmd/main"
+package "trkbt10/micado_mbt/cmd/main"
 
 // Values
 
@@ -13,4 +13,3 @@ type OutputToken
 // Type aliases
 
 // Traits
-

@@ -2,7 +2,7 @@
   "import": [
     "moonbitlang/core/bench",
     {
-      "path": "username/micado_mbt/src/scanner/utf16",
+      "path": "trkbt10/micado_mbt/src/scanner/utf16",
       "alias": "scanner"
     }
   ]

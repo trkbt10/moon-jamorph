@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "username/micado_mbt"
+package "trkbt10/micado_mbt"
 
 // Values
 pub fn fib(Int) -> Int64
@@ -13,4 +13,3 @@ pub fn sum(data~ : Array[Int], start? : Int, length? : Int) -> Int
 // Type aliases
 
 // Traits
-

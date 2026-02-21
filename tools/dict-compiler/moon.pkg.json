@@ -1,15 +1,15 @@
 {
   "import": [
     {
-      "path": "username/micado_mbt/tools/dict-compiler/builder",
+      "path": "trkbt10/micado_mbt/tools/dict-compiler/builder",
       "alias": "builder"
     },
     {
-      "path": "username/micado_mbt/tools/dict-compiler/compressor",
+      "path": "trkbt10/micado_mbt/tools/dict-compiler/compressor",
       "alias": "compressor"
     },
     {
-      "path": "username/micado_mbt/tools/dict-compiler/editions",
+      "path": "trkbt10/micado_mbt/tools/dict-compiler/editions",
       "alias": "editions"
     }
   ]

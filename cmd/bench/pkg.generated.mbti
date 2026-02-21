@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "username/micado_mbt/cmd/bench"
+package "trkbt10/micado_mbt/cmd/bench"
 
 // Values
 
@@ -10,4 +10,3 @@ package "username/micado_mbt/cmd/bench"
 // Type aliases
 
 // Traits
-

@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "username/micado_mbt/cmd/ipadic_demo"
+package "trkbt10/micado_mbt/cmd/ipadic_demo"
 
 // Values
 
@@ -10,4 +10,3 @@ package "username/micado_mbt/cmd/ipadic_demo"
 // Type aliases
 
 // Traits
-

@@ -1,8 +1,8 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "username/micado_mbt/src/tokenizer"
+package "trkbt10/micado_mbt/src/tokenizer"
 
 import {
-  "username/micado_mbt/src/types",
+  "trkbt10/micado_mbt/src/types",
 }
 
 // Values
@@ -46,4 +46,3 @@ pub type Edition = Int
 pub type Mode = Int
 
 // Traits
-

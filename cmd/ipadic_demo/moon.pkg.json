@@ -2,7 +2,7 @@
   "is-main": true,
   "import": [
     {
-      "path": "username/micado_mbt/src/tokenizer",
+      "path": "trkbt10/micado_mbt/src/tokenizer",
       "alias": "tok"
     }
   ]

@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "username/micado_mbt/tools/dict-compiler"
+package "trkbt10/micado_mbt/tools/dict-compiler"
 
 // Values
 pub fn build_compact_id_mapping(Array[LexiconRow], Int) -> Array[Int]
@@ -30,4 +30,3 @@ pub(all) struct LexiconRow {
 // Type aliases
 
 // Traits
-

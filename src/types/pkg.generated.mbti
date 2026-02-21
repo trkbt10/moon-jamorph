@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "username/micado_mbt/src/types"
+package "trkbt10/micado_mbt/src/types"
 
 // Values
 pub fn chars_slice(Array[Char], Int, Int) -> String
@@ -75,4 +75,3 @@ pub(all) struct TokenCandidate {
 // Type aliases
 
 // Traits
-

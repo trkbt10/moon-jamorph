@@ -1,20 +1,20 @@
 {
   "import": [
     {
-      "path": "username/micado_mbt/src/scanner/utf16",
+      "path": "trkbt10/micado_mbt/src/scanner/utf16",
       "alias": "scanner"
     },
     {
-      "path": "username/micado_mbt/src/scanner/utf8",
+      "path": "trkbt10/micado_mbt/src/scanner/utf8",
       "alias": "scanner8"
     },
     "moonbitlang/core/encoding/utf8",
     {
-      "path": "username/micado_mbt/src/core/viterbi",
+      "path": "trkbt10/micado_mbt/src/core/viterbi",
       "alias": "viterbi"
     },
     {
-      "path": "username/micado_mbt/src/types",
+      "path": "trkbt10/micado_mbt/src/types",
       "alias": "types"
     }
   ]

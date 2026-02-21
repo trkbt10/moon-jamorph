@@ -6,15 +6,15 @@
       "alias": "ref"
     },
     {
-      "path": "username/micado_mbt/src/types",
+      "path": "trkbt10/micado_mbt/src/types",
       "alias": "types"
     },
     {
-      "path": "username/micado_mbt/src/core/lattice",
+      "path": "trkbt10/micado_mbt/src/core/lattice",
       "alias": "lattice"
     },
     {
-      "path": "username/micado_mbt/src/core/scorer",
+      "path": "trkbt10/micado_mbt/src/core/scorer",
       "alias": "scorer"
     }
   ]

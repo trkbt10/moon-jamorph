@@ -1,8 +1,8 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "username/micado_mbt/src/scanner/utf16"
+package "trkbt10/micado_mbt/src/scanner/utf16"
 
 import {
-  "username/micado_mbt/src/types",
+  "trkbt10/micado_mbt/src/types",
 }
 
 // Values
@@ -31,4 +31,3 @@ pub fn scanner_modes_match(String) -> Bool
 // Type aliases
 
 // Traits
-

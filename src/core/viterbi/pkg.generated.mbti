@@ -1,8 +1,8 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "username/micado_mbt/src/core/viterbi"
+package "trkbt10/micado_mbt/src/core/viterbi"
 
 import {
-  "username/micado_mbt/src/types",
+  "trkbt10/micado_mbt/src/types",
 }
 
 // Values
@@ -21,4 +21,3 @@ pub fn decode_viterbi_with_precomputed(String, Array[Char], Array[@types.CharCla
 // Type aliases
 
 // Traits
-

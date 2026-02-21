@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "username/micado_mbt/tools/dict-compiler/editions"
+package "trkbt10/micado_mbt/tools/dict-compiler/editions"
 
 // Values
 pub const EDITION_FULL : String = "full"
@@ -23,4 +23,3 @@ pub fn should_include_pos_tag(String, String) -> Bool
 // Type aliases
 
 // Traits
-

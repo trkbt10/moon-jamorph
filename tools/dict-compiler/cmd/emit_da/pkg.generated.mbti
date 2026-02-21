@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "username/micado_mbt/tools/dict-compiler/cmd/emit_da"
+package "trkbt10/micado_mbt/tools/dict-compiler/cmd/emit_da"
 
 // Values
 
@@ -10,4 +10,3 @@ package "username/micado_mbt/tools/dict-compiler/cmd/emit_da"
 // Type aliases
 
 // Traits
-

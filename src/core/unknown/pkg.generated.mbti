@@ -1,8 +1,8 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "username/micado_mbt/src/core/unknown"
+package "trkbt10/micado_mbt/src/core/unknown"
 
 import {
-  "username/micado_mbt/src/types",
+  "trkbt10/micado_mbt/src/types",
 }
 
 // Values
@@ -19,4 +19,3 @@ pub fn generate_unknown_candidates(Array[@types.CharClass], Int) -> Array[@types
 // Type aliases
 
 // Traits
-

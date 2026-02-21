@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "username/micado_mbt/bench/throughput"
+package "trkbt10/micado_mbt/bench/throughput"
 
 // Values
 pub fn benchmark_tokenizer_throughput(String, count? : UInt) -> String
@@ -11,4 +11,3 @@ pub fn benchmark_tokenizer_throughput(String, count? : UInt) -> String
 // Type aliases
 
 // Traits
-

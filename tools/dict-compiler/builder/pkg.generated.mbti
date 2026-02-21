@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "username/micado_mbt/tools/dict-compiler/builder"
+package "trkbt10/micado_mbt/tools/dict-compiler/builder"
 
 // Values
 pub fn build_da_trie_from_surfaces(Array[String]) -> DATrieBuildResult
@@ -24,4 +24,3 @@ pub struct DATrieBuildResult {
 // Type aliases
 
 // Traits
-

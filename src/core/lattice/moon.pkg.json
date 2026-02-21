@@ -1,15 +1,15 @@
 {
   "import": [
     {
-      "path": "username/micado_mbt/src/types",
+      "path": "trkbt10/micado_mbt/src/types",
       "alias": "types"
     },
     {
-      "path": "username/micado_mbt/src/core/runtime_dict",
+      "path": "trkbt10/micado_mbt/src/core/runtime_dict",
       "alias": "runtime"
     },
     {
-      "path": "username/micado_mbt/src/core/unknown",
+      "path": "trkbt10/micado_mbt/src/core/unknown",
       "alias": "unknown"
     }
   ]

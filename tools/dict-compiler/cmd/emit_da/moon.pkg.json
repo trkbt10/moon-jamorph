@@ -2,7 +2,7 @@
   "is-main": true,
   "import": [
     {
-      "path": "username/micado_mbt/tools/dict-compiler",
+      "path": "trkbt10/micado_mbt/tools/dict-compiler",
       "alias": "compiler"
     },
     "moonbitlang/core/env",
