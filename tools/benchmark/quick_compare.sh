@@ -126,6 +126,8 @@ fi
 tmp_dir="$(mktemp -d)"
 trap 'rm -rf "$tmp_dir"' EXIT
 corpus="${tmp_dir}/corpus.txt"
+empty_corpus="${tmp_dir}/empty.txt"
+: > "$empty_corpus"
 for _ in $(seq 1 "$COPIES"); do
   cat "$INPUT_FILE" >> "$corpus"
 done
@@ -205,60 +207,108 @@ stats_discard_minmax() {
 run_case() {
   local label="$1"
   local command="$2"
+  local startup_command="$3"
   local case_id
   case_id="$(echo "$label" | tr ' /' '__')"
 
   local warm_file="${tmp_dir}/warm_${case_id}.txt"
+  local warm_startup_file="${tmp_dir}/warm_startup_${case_id}.txt"
   : > "$warm_file"
+  : > "$warm_startup_file"
   for _ in $(seq 1 "$RUNS"); do
     measure_once "$command" >> "$warm_file"
+    measure_once "$startup_command" >> "$warm_startup_file"
   done
-  local warm_avg
+  local warm_avg warm_startup_avg warm_without_startup
   warm_avg="$(mean_of_file "$warm_file")"
+  warm_startup_avg="$(mean_of_file "$warm_startup_file")"
+  warm_without_startup="$(
+    awk -v full="$warm_avg" -v startup="$warm_startup_avg" \
+      'BEGIN {v=full-startup; if (v < 0) v=0; printf "%.6f", v}'
+  )"
 
-  local min_sum=0
-  local avg_sum=0
-  local max_sum=0
+  local min_sum=0 avg_sum=0 max_sum=0
+  local startup_min_sum=0 startup_avg_sum=0 startup_max_sum=0
   for trial in $(seq 1 "$TRIALS"); do
     local trial_file="${tmp_dir}/trial_${case_id}_${trial}.txt"
     local sorted_file="${tmp_dir}/trial_${case_id}_${trial}_sorted.txt"
+    local startup_trial_file="${tmp_dir}/startup_trial_${case_id}_${trial}.txt"
+    local startup_sorted_file="${tmp_dir}/startup_trial_${case_id}_${trial}_sorted.txt"
     : > "$trial_file"
+    : > "$startup_trial_file"
     for _ in $(seq 1 "$RUNS"); do
       measure_once "$command" >> "$trial_file"
+      measure_once "$startup_command" >> "$startup_trial_file"
     done
-    local stats
+    local stats startup_stats
     stats="$(stats_discard_minmax "$trial_file" "$sorted_file")"
-    local t_min t_avg t_max
+    startup_stats="$(
+      stats_discard_minmax "$startup_trial_file" "$startup_sorted_file"
+    )"
+    local t_min t_avg t_max st_min st_avg st_max
     read -r t_min t_avg t_max <<<"$stats"
+    read -r st_min st_avg st_max <<<"$startup_stats"
     min_sum="$(awk -v a="$min_sum" -v b="$t_min" 'BEGIN {printf "%.9f", a + b}')"
     avg_sum="$(awk -v a="$avg_sum" -v b="$t_avg" 'BEGIN {printf "%.9f", a + b}')"
     max_sum="$(awk -v a="$max_sum" -v b="$t_max" 'BEGIN {printf "%.9f", a + b}')"
+    startup_min_sum="$(awk -v a="$startup_min_sum" -v b="$st_min" 'BEGIN {printf "%.9f", a + b}')"
+    startup_avg_sum="$(awk -v a="$startup_avg_sum" -v b="$st_avg" 'BEGIN {printf "%.9f", a + b}')"
+    startup_max_sum="$(awk -v a="$startup_max_sum" -v b="$st_max" 'BEGIN {printf "%.9f", a + b}')"
   done
 
-  local min_sec avg_sec max_sec
+  local min_sec avg_sec max_sec startup_min_sec startup_avg_sec startup_max_sec
   min_sec="$(awk -v s="$min_sum" -v t="$TRIALS" 'BEGIN {printf "%.6f", s/t}')"
   avg_sec="$(awk -v s="$avg_sum" -v t="$TRIALS" 'BEGIN {printf "%.6f", s/t}')"
   max_sec="$(awk -v s="$max_sum" -v t="$TRIALS" 'BEGIN {printf "%.6f", s/t}')"
+  startup_min_sec="$(awk -v s="$startup_min_sum" -v t="$TRIALS" 'BEGIN {printf "%.6f", s/t}')"
+  startup_avg_sec="$(awk -v s="$startup_avg_sum" -v t="$TRIALS" 'BEGIN {printf "%.6f", s/t}')"
+  startup_max_sec="$(awk -v s="$startup_max_sum" -v t="$TRIALS" 'BEGIN {printf "%.6f", s/t}')"
+
+  local tokenize_min_sec tokenize_avg_sec tokenize_max_sec
+  tokenize_min_sec="$(
+    awk -v full="$min_sec" -v startup="$startup_min_sec" \
+      'BEGIN {v=full-startup; if (v < 0) v=0; printf "%.6f", v}'
+  )"
+  tokenize_avg_sec="$(
+    awk -v full="$avg_sec" -v startup="$startup_avg_sec" \
+      'BEGIN {v=full-startup; if (v < 0) v=0; printf "%.6f", v}'
+  )"
+  tokenize_max_sec="$(
+    awk -v full="$max_sec" -v startup="$startup_max_sec" \
+      'BEGIN {v=full-startup; if (v < 0) v=0; printf "%.6f", v}'
+  )"
 
   local sps_min sps_avg sps_max
   sps_min="$(awk -v s="$total_sentences" -v sec="$max_sec" 'BEGIN {if (sec <= 0) print "inf"; else printf "%.2f", s/sec}')"
   sps_avg="$(awk -v s="$total_sentences" -v sec="$avg_sec" 'BEGIN {if (sec <= 0) print "inf"; else printf "%.2f", s/sec}')"
   sps_max="$(awk -v s="$total_sentences" -v sec="$min_sec" 'BEGIN {if (sec <= 0) print "inf"; else printf "%.2f", s/sec}')"
+  local sps_wo_startup_min sps_wo_startup_avg sps_wo_startup_max
+  sps_wo_startup_min="$(awk -v s="$total_sentences" -v sec="$tokenize_max_sec" 'BEGIN {if (sec <= 0) print "inf"; else printf "%.2f", s/sec}')"
+  sps_wo_startup_avg="$(awk -v s="$total_sentences" -v sec="$tokenize_avg_sec" 'BEGIN {if (sec <= 0) print "inf"; else printf "%.2f", s/sec}')"
+  sps_wo_startup_max="$(awk -v s="$total_sentences" -v sec="$tokenize_min_sec" 'BEGIN {if (sec <= 0) print "inf"; else printf "%.2f", s/sec}')"
 
   echo
   echo "[${label}]"
   echo "Warmup: ${warm_avg}"
+  echo "Warmup_startup_overhead_estimate: ${warm_startup_avg}"
+  echo "Warmup_without_startup_estimate: ${warm_without_startup}"
   echo "Number_of_sentences: ${total_sentences}"
   echo "Elapsed_seconds_to_tokenize_all_sentences: [${min_sec},${avg_sec},${max_sec}]"
   echo "Sentences_per_second: [${sps_min},${sps_avg},${sps_max}]"
+  echo "Startup_overhead_seconds_estimate: [${startup_min_sec},${startup_avg_sec},${startup_max_sec}]"
+  echo "Elapsed_seconds_without_startup_estimate: [${tokenize_min_sec},${tokenize_avg_sec},${tokenize_max_sec}]"
+  echo "Sentences_per_second_without_startup_estimate: [${sps_wo_startup_min},${sps_wo_startup_avg},${sps_wo_startup_max}]"
 }
 
 echo "[quick_compare] input=${INPUT_FILE} copies=${COPIES} total_sentences=${total_sentences}"
 echo "[quick_compare] runs=${RUNS} trials=${TRIALS} (vibrato benchmark style)"
 echo "[quick_compare] mecab_dicdir=${MECAB_DICDIR}"
+echo "[quick_compare] reporting startup-inclusive and startup-subtracted estimates"
 
 printf -v micado_cmd '%q -e %q -Onone < %q' "$micado_bin" "$EDITION" "$corpus"
 printf -v mecab_cmd 'mecab -d %q < %q > /dev/null' "$MECAB_DICDIR" "$corpus"
+printf -v micado_startup_cmd '%q -e %q -Onone < %q' "$micado_bin" "$EDITION" "$empty_corpus"
+printf -v mecab_startup_cmd 'mecab -d %q < %q > /dev/null' "$MECAB_DICDIR" "$empty_corpus"
 
-run_case "micado/${EDITION}" "$micado_cmd"
-run_case "mecab/$(basename "$MECAB_DICDIR")" "$mecab_cmd"
+run_case "micado/${EDITION}" "$micado_cmd" "$micado_startup_cmd"
+run_case "mecab/$(basename "$MECAB_DICDIR")" "$mecab_cmd" "$mecab_startup_cmd"

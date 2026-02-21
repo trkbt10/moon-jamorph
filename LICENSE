@@ -200,3 +200,10 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
+
+Additional Notice
+-----------------
+This project includes independent optimizations inspired by publicly
+documented techniques from Vibrato (https://github.com/daac-tools/vibrato),
+including connection-id remapping for cache locality. No Vibrato source code
+is copied into this repository by this notice.

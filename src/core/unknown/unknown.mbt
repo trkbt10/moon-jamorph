@@ -5,6 +5,8 @@ pub fn append_unknown_candidates_with_run_len(
   pos : Int,
   run_len : Int,
 ) -> Unit {
+  let noun_conn_id = @runtime.connection_id_to_index_or_missing(1)
+  let unknown_conn_id = @runtime.connection_id_to_index_or_missing(3)
   let cat = classes[pos]
   let run_len = if run_len > 0 { run_len } else { 1 }
   match cat {
@@ -16,8 +18,8 @@ pub fn append_unknown_candidates_with_run_len(
           pos: @types.POS::NounProper,
           pos_detail: "名詞,固有名詞,未知語,*",
           mecab_feature: "名詞,固有名詞,未知語,*,*,*,*,*,*",
-          left_id: 1,
-          right_id: 1,
+          left_id: noun_conn_id,
+          right_id: noun_conn_id,
           word_cost: 7000,
         })
       }
@@ -28,8 +30,8 @@ pub fn append_unknown_candidates_with_run_len(
         pos: @types.POS::NounProper,
         pos_detail: "名詞,固有名詞,未知語,*",
         mecab_feature: "名詞,固有名詞,未知語,*,*,*,*,*,*",
-        left_id: 1,
-        right_id: 1,
+        left_id: noun_conn_id,
+        right_id: noun_conn_id,
         word_cost: 7600,
       })
       dst.push({
@@ -38,8 +40,8 @@ pub fn append_unknown_candidates_with_run_len(
         pos: @types.POS::Unknown,
         pos_detail: "未知語,英字,*,*",
         mecab_feature: "未知語,英字,*,*,*,*,*,*,*",
-        left_id: 3,
-        right_id: 3,
+        left_id: unknown_conn_id,
+        right_id: unknown_conn_id,
         word_cost: 10000,
       })
     }
@@ -50,8 +52,8 @@ pub fn append_unknown_candidates_with_run_len(
         pos: @types.POS::NounGeneral,
         pos_detail: "名詞,数,*,*",
         mecab_feature: "名詞,数,*,*,*,*,*,*,*",
-        left_id: 1,
-        right_id: 1,
+        left_id: noun_conn_id,
+        right_id: noun_conn_id,
         word_cost: 7300,
       })
       dst.push({
@@ -60,8 +62,8 @@ pub fn append_unknown_candidates_with_run_len(
         pos: @types.POS::Unknown,
         pos_detail: "未知語,数字,*,*",
         mecab_feature: "未知語,数字,*,*,*,*,*,*,*",
-        left_id: 3,
-        right_id: 3,
+        left_id: unknown_conn_id,
+        right_id: unknown_conn_id,
         word_cost: 10000,
       })
     }
@@ -74,8 +76,8 @@ pub fn append_unknown_candidates_with_run_len(
           pos: @types.POS::NounGeneral,
           pos_detail: "名詞,一般,未知語,*",
           mecab_feature: "名詞,一般,未知語,*,*,*,*,*,*",
-          left_id: 1,
-          right_id: 1,
+          left_id: noun_conn_id,
+          right_id: noun_conn_id,
           word_cost: 8000,
         })
       }
@@ -89,8 +91,8 @@ pub fn append_unknown_candidates_with_run_len(
           pos: @types.POS::Unknown,
           pos_detail: "未知語,ひらがな,*,*",
           mecab_feature: "未知語,ひらがな,*,*,*,*,*,*,*",
-          left_id: 3,
-          right_id: 3,
+          left_id: unknown_conn_id,
+          right_id: unknown_conn_id,
           word_cost: 9600,
         })
       }
@@ -102,8 +104,8 @@ pub fn append_unknown_candidates_with_run_len(
         pos: @types.POS::Unknown,
         pos_detail: "未知語,記号,*,*",
         mecab_feature: "未知語,記号,*,*,*,*,*,*,*",
-        left_id: 3,
-        right_id: 3,
+        left_id: unknown_conn_id,
+        right_id: unknown_conn_id,
         word_cost: 11000,
       })
     _ =>
@@ -113,8 +115,8 @@ pub fn append_unknown_candidates_with_run_len(
         pos: @types.POS::Unknown,
         pos_detail: "未知語,その他,*,*",
         mecab_feature: "未知語,その他,*,*,*,*,*,*,*",
-        left_id: 3,
-        right_id: 3,
+        left_id: unknown_conn_id,
+        right_id: unknown_conn_id,
         word_cost: 10000,
       })
   }

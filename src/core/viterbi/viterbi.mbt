@@ -80,6 +80,7 @@ pub fn decode_viterbi_with_precomputed(
   let mecab_feature_pool : Array[String] = Array::new(capacity=64)
   let mut eos_best_cost = @int.max_value
   let mut eos_best_prev = -1
+  let bos_connection_id = @scorer.connection_index_or_missing(0)
   let bos_pos_detail_id = intern_pos_detail(pos_detail_pool, "BOS/EOS,*,*,*")
   let bos_mecab_feature_id = intern_pos_detail(
     mecab_feature_pool, "BOS/EOS,*,*,*,*,*,*,*,*",
@@ -90,7 +91,7 @@ pub fn decode_viterbi_with_precomputed(
     pos: @types.POS::BosEos,
     pos_detail_id: bos_pos_detail_id,
     mecab_feature_id: bos_mecab_feature_id,
-    right_id: 0,
+    right_id: bos_connection_id,
     best_cost: 0,
     best_prev: -1,
   })
@@ -171,7 +172,8 @@ pub fn decode_viterbi_with_precomputed(
         })
         if cand.end_pos == text_len {
           next_by_end.push(-1)
-          let eos_cost = best_cost + @scorer.connection_cost(cand.right_id, 0)
+          let eos_cost = best_cost +
+            @scorer.connection_cost(cand.right_id, bos_connection_id)
           if eos_cost < eos_best_cost {
             eos_best_cost = eos_cost
             eos_best_prev = node_index
@@ -254,7 +256,8 @@ pub fn decode_viterbi_with_precomputed(
         })
         if cand.end_pos == text_len {
           next_by_end.push(-1)
-          let eos_cost = best_cost + @scorer.connection_cost(cand.right_id, 0)
+          let eos_cost = best_cost +
+            @scorer.connection_cost(cand.right_id, bos_connection_id)
           if eos_cost < eos_best_cost {
             eos_best_cost = eos_cost
             eos_best_prev = node_index

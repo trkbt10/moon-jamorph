@@ -29,8 +29,8 @@ Options:
   -i, --input <file>       Input corpus file (default: bench/corpus/aozora_openings.txt)
   -d, --dicdir <path>      MeCab dictionary directory (default: auto detect, ipadic preferred)
   -e, --edition <name>     micado edition: nano|mini|standard|full (default: full)
-      --runs <n>           RUNS for micado/MeCab benchmark (default: 10)
-      --trials <n>         TRIALS for micado/MeCab benchmark (default: 10)
+      --runs <n>           RUNS for each benchmark case (default: 10)
+      --trials <n>         TRIALS for each benchmark case (default: 10)
   -c, --copies <n>         Duplicate input corpus N times (default: 2000)
       --chart-layout <m>   Chart layout: auto|horizontal|vertical (default: auto)
       --png-max-width <n>  Max PNG/SVG width in px, 0 disables resize (default: 960)
@@ -94,6 +94,121 @@ auto_detect_dicdir() {
     fi
   done
   return 1
+}
+
+emit_subprocess_benchmark_block() {
+  local label="$1"
+  local command="$2"
+  local startup_command="$3"
+  local runs="$4"
+  local trials="$5"
+  local total_sentences="$6"
+
+  python3 - "$label" "$command" "$startup_command" "$runs" "$trials" "$total_sentences" <<'PY'
+import subprocess
+import sys
+import time
+
+label = sys.argv[1]
+command = sys.argv[2]
+startup_command = sys.argv[3]
+runs = int(sys.argv[4])
+trials = int(sys.argv[5])
+total_sentences = int(sys.argv[6])
+
+
+def measure_once(cmd: str) -> float:
+    t0 = time.perf_counter()
+    subprocess.run(
+        cmd,
+        shell=True,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=True,
+    )
+    t1 = time.perf_counter()
+    return t1 - t0
+
+
+def trimmed_stats(values):
+    xs = sorted(values)
+    if len(xs) >= 3:
+        xs = xs[1:-1]
+    if not xs:
+        return 0.0, 0.0, 0.0
+    return min(xs), sum(xs) / len(xs), max(xs)
+
+
+def clamp_non_negative(v: float) -> float:
+    return v if v > 0.0 else 0.0
+
+
+def to_sps(sec: float) -> str:
+    if sec <= 0:
+        return "inf"
+    return f"{total_sentences / sec:.2f}"
+
+
+warm_values = [measure_once(command) for _ in range(runs)]
+warm_startup_values = [measure_once(startup_command) for _ in range(runs)]
+warm_avg = sum(warm_values) / runs if runs > 0 else 0.0
+warm_startup_avg = sum(warm_startup_values) / runs if runs > 0 else 0.0
+warm_wo_startup = clamp_non_negative(warm_avg - warm_startup_avg)
+
+full_min_sum = 0.0
+full_avg_sum = 0.0
+full_max_sum = 0.0
+startup_min_sum = 0.0
+startup_avg_sum = 0.0
+startup_max_sum = 0.0
+for _ in range(trials):
+    full_values = [measure_once(command) for _ in range(runs)]
+    startup_values = [measure_once(startup_command) for _ in range(runs)]
+    f_min, f_avg, f_max = trimmed_stats(full_values)
+    s_min, s_avg, s_max = trimmed_stats(startup_values)
+    full_min_sum += f_min
+    full_avg_sum += f_avg
+    full_max_sum += f_max
+    startup_min_sum += s_min
+    startup_avg_sum += s_avg
+    startup_max_sum += s_max
+
+full_min = full_min_sum / trials if trials > 0 else 0.0
+full_avg = full_avg_sum / trials if trials > 0 else 0.0
+full_max = full_max_sum / trials if trials > 0 else 0.0
+startup_min = startup_min_sum / trials if trials > 0 else 0.0
+startup_avg = startup_avg_sum / trials if trials > 0 else 0.0
+startup_max = startup_max_sum / trials if trials > 0 else 0.0
+tok_min = clamp_non_negative(full_min - startup_min)
+tok_avg = clamp_non_negative(full_avg - startup_avg)
+tok_max = clamp_non_negative(full_max - startup_max)
+
+print(f"[{label}]")
+print(f"Warmup: {warm_avg:.6f}")
+print(f"Warmup_startup_overhead_estimate: {warm_startup_avg:.6f}")
+print(f"Warmup_without_startup_estimate: {warm_wo_startup:.6f}")
+print(f"Number_of_sentences: {total_sentences}")
+print(
+    "Elapsed_seconds_to_tokenize_all_sentences: "
+    f"[{full_min:.6f},{full_avg:.6f},{full_max:.6f}]"
+)
+print(
+    "Sentences_per_second: "
+    f"[{to_sps(full_max)},{to_sps(full_avg)},{to_sps(full_min)}]"
+)
+print(
+    "Startup_overhead_seconds_estimate: "
+    f"[{startup_min:.6f},{startup_avg:.6f},{startup_max:.6f}]"
+)
+print(
+    "Elapsed_seconds_without_startup_estimate: "
+    f"[{tok_min:.6f},{tok_avg:.6f},{tok_max:.6f}]"
+)
+print(
+    "Sentences_per_second_without_startup_estimate: "
+    f"[{to_sps(tok_max)},{to_sps(tok_avg)},{to_sps(tok_min)}]"
+)
+PY
 }
 
 while [[ $# -gt 0 ]]; do
@@ -203,6 +318,8 @@ LATEST_TXT="${OUT_DIR}/quick_compare_latest.txt"
 LATEST_SVG="${OUT_DIR}/quick_compare_latest.svg"
 LATEST_PNG="${OUT_DIR}/quick_compare_latest.png"
 README_FILE="${ROOT_DIR}/README.mbt.md"
+base_sentences="$(awk 'NF>0 {c++} END {print c+0}' "$INPUT_FILE")"
+total_sentences=$((base_sentences * COPIES))
 
 echo "[run_all] running micado + mecab benchmark..."
 "${ROOT_DIR}/tools/benchmark/quick_compare.sh" \
@@ -284,42 +401,27 @@ PY
   fi
 
   echo "[run_all] running vibrato benchmark..."
-  vib_raw="${tmp_dir}/vibrato_raw.txt"
+  empty_input="${tmp_dir}/empty.txt"
+  : > "$empty_input"
   (
     cd "$VIBRATO_REPO_DIR"
-    cargo run --release -p benchmark -- -i "$VIBRATO_SYSDIC" < "$expanded_input"
-  ) 2>&1 | tee "$vib_raw" >/dev/null
-
+    cargo build --release -p tokenize >/dev/null
+  )
+  vib_bin="${VIBRATO_REPO_DIR}/target/release/tokenize"
+  if [[ ! -x "$vib_bin" ]]; then
+    echo "error: vibrato binary not found: $vib_bin" >&2
+    exit 1
+  fi
+  printf -v vib_cmd '%q -i %q -O wakati < %q > /dev/null' "$vib_bin" "$VIBRATO_SYSDIC" "$expanded_input"
+  printf -v vib_startup_cmd '%q -i %q -O wakati < %q > /dev/null' "$vib_bin" "$VIBRATO_SYSDIC" "$empty_input"
   vib_block="$(
-    python3 - "$vib_raw" <<'PY'
-import re
-import sys
-from pathlib import Path
-
-text = Path(sys.argv[1]).read_text(encoding="utf-8", errors="replace")
-warm = re.search(r"^Warmup:\s*([0-9.]+)\s*$", text, re.MULTILINE)
-sent = re.search(r"^Number_of_sentences:\s*([0-9]+)\s*$", text, re.MULTILINE)
-ela = re.search(
-    r"^Elapsed_seconds_to_tokenize_all_sentences:\s*\[([0-9.]+),([0-9.]+),([0-9.]+)\]\s*$",
-    text,
-    re.MULTILINE,
-)
-if warm is None or sent is None or ela is None:
-    raise SystemExit("failed to parse vibrato benchmark output")
-warmup = float(warm.group(1))
-num = int(sent.group(1))
-mn = float(ela.group(1))
-av = float(ela.group(2))
-mx = float(ela.group(3))
-sps_min = num / mx
-sps_avg = num / av
-sps_max = num / mn
-print("[vibrato/ipadic-mecab-2_7_0]")
-print(f"Warmup: {warmup:.6f}")
-print(f"Number_of_sentences: {num}")
-print(f"Elapsed_seconds_to_tokenize_all_sentences: [{mn:.6f},{av:.6f},{mx:.6f}]")
-print(f"Sentences_per_second: [{sps_min:.2f},{sps_avg:.2f},{sps_max:.2f}]")
-PY
+    emit_subprocess_benchmark_block \
+      "vibrato/ipadic-mecab-2_7_0" \
+      "$vib_cmd" \
+      "$vib_startup_cmd" \
+      "$RUNS" \
+      "$TRIALS" \
+      "$total_sentences"
   )"
 
   {

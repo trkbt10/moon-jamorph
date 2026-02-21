@@ -140,6 +140,12 @@ tools/benchmark/run_all.sh --dicdir /opt/homebrew/lib/mecab/dic/ipadic
 共有しやすい画像サイズにしたい場合は、`--png-max-width`（既定: `960`）と
 `--chart-layout auto|horizontal|vertical` を指定できます（既定: `auto`）。
 
+出力されるベンチ指標は次の方針です。
+
+- `Elapsed_seconds_to_tokenize_all_sentences` / `Sentences_per_second` は起動コスト込み（従来互換）
+- `*_without_startup_estimate` は空入力計測を差し引いた推定値（起動影響を抑えた比較用）
+- グラフは上記2系統（起動込み / 差し引き推定）を併記
+
 生成物:
 
 ```text
@@ -153,22 +159,37 @@ bench/benchmark/quick_compare_latest.png
 
 ```text
 [micado/full]
-Warmup: 0.102575
+Warmup: 0.099132
+Warmup_startup_overhead_estimate: 0.006373
+Warmup_without_startup_estimate: 0.092759
 Number_of_sentences: 20000
-Elapsed_seconds_to_tokenize_all_sentences: [0.101733,0.103777,0.106635]
-Sentences_per_second: [187555.68,192720.93,196593.04]
+Elapsed_seconds_to_tokenize_all_sentences: [0.095185,0.096332,0.097763]
+Sentences_per_second: [204576.37,207615.33,210117.14]
+Startup_overhead_seconds_estimate: [0.005909,0.006275,0.006703]
+Elapsed_seconds_without_startup_estimate: [0.089276,0.090057,0.091060]
+Sentences_per_second_without_startup_estimate: [219635.41,222081.57,224024.37]
 
 [mecab/ipadic]
-Warmup: 0.176270
+Warmup: 0.180621
+Warmup_startup_overhead_estimate: 0.006672
+Warmup_without_startup_estimate: 0.173949
 Number_of_sentences: 20000
-Elapsed_seconds_to_tokenize_all_sentences: [0.174047,0.177058,0.181125]
-Sentences_per_second: [110420.98,112957.34,114911.49]
+Elapsed_seconds_to_tokenize_all_sentences: [0.174141,0.176255,0.179488]
+Sentences_per_second: [111428.06,113471.96,114849.46]
+Startup_overhead_seconds_estimate: [0.006139,0.006487,0.006896]
+Elapsed_seconds_without_startup_estimate: [0.168002,0.169768,0.172592]
+Sentences_per_second_without_startup_estimate: [115880.23,117807.83,119046.20]
 
 [vibrato/ipadic-mecab-2_7_0]
-Warmup: 0.039321
+Warmup: 0.199524
+Warmup_startup_overhead_estimate: 0.131749
+Warmup_without_startup_estimate: 0.067776
 Number_of_sentences: 20000
-Elapsed_seconds_to_tokenize_all_sentences: [0.030822,0.031502,0.033923]
-Sentences_per_second: [589577.89,634875.13,648888.38]
+Elapsed_seconds_to_tokenize_all_sentences: [0.167144,0.171198,0.178776]
+Sentences_per_second: [111871.70,116823.71,119657.02]
+Startup_overhead_seconds_estimate: [0.131096,0.133127,0.135297]
+Elapsed_seconds_without_startup_estimate: [0.036048,0.038071,0.043480]
+Sentences_per_second_without_startup_estimate: [459986.80,525329.01,554809.32]
 ```
 
 シェア向けPNG: `bench/benchmark/quick_compare_latest.png`（自動リサイズ・Git非追跡）

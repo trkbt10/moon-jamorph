@@ -10,7 +10,11 @@ pub fn append_dictionary_candidates(Array[@types.TokenCandidate], Array[Char], I
 
 pub fn connection_cost(Int, Int) -> Int
 
+pub fn connection_cost_by_index(Int, Int) -> Int
+
 pub fn connection_id_count() -> Int
+
+pub fn connection_id_to_index_or_missing(Int) -> Int
 
 pub fn entry_count() -> Int
 

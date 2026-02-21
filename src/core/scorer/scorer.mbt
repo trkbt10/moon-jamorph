@@ -1,6 +1,11 @@
 ///|
 pub fn connection_cost(right_id : Int, left_id : Int) -> Int {
-  @runtime.connection_cost(right_id, left_id)
+  @runtime.connection_cost_by_index(right_id, left_id)
+}
+
+///|
+pub fn connection_index_or_missing(raw_id : Int) -> Int {
+  @runtime.connection_id_to_index_or_missing(raw_id)
 }
 
 ///|

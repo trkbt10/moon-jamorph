@@ -4,32 +4,79 @@ import re
 from pathlib import Path
 
 
-CASE_RE = re.compile(
-    r"^\[(?P<label>[^\]]+)\]\s*$"
-    r".*?^Warmup:\s*(?P<warmup>[0-9.]+)\s*$"
-    r".*?^Number_of_sentences:\s*(?P<sentences>[0-9]+)\s*$"
-    r".*?^Elapsed_seconds_to_tokenize_all_sentences:\s*\[(?P<min>[0-9.]+),(?P<avg>[0-9.]+),(?P<max>[0-9.]+)\]\s*$"
-    r".*?^Sentences_per_second:\s*\[(?P<sps_min>[0-9.]+),(?P<sps_avg>[0-9.]+),(?P<sps_max>[0-9.]+)\]\s*$",
-    re.MULTILINE | re.DOTALL,
-)
+CASE_LABEL_RE = re.compile(r"^\[(?P<label>[^\]]+)\]\s*$")
+TRIPLE_RE = re.compile(r"^\[(?P<min>[0-9.]+),(?P<avg>[0-9.]+),(?P<max>[0-9.]+)\]$")
+
+
+def parse_triple(value: str):
+    m = TRIPLE_RE.match(value.strip())
+    if not m:
+        return None
+    return float(m.group("min")), float(m.group("avg")), float(m.group("max"))
 
 
 def parse_cases(text: str):
+    lines = text.splitlines()
     cases = []
-    for m in CASE_RE.finditer(text):
-        cases.append(
-            {
-                "label": m.group("label"),
-                "warmup": float(m.group("warmup")),
-                "sentences": int(m.group("sentences")),
-                "elapsed_min": float(m.group("min")),
-                "elapsed_avg": float(m.group("avg")),
-                "elapsed_max": float(m.group("max")),
-                "sps_min": float(m.group("sps_min")),
-                "sps_avg": float(m.group("sps_avg")),
-                "sps_max": float(m.group("sps_max")),
-            }
+    i = 0
+    while i < len(lines):
+        label_match = CASE_LABEL_RE.match(lines[i].strip())
+        if not label_match:
+            i += 1
+            continue
+        label = label_match.group("label")
+        i += 1
+        fields = {}
+        while i < len(lines):
+            raw = lines[i].strip()
+            if not raw:
+                i += 1
+                break
+            if CASE_LABEL_RE.match(raw):
+                break
+            if ":" in raw:
+                key, value = raw.split(":", 1)
+                fields[key.strip()] = value.strip()
+            i += 1
+
+        try:
+            warmup = float(fields["Warmup"])
+            sentences = int(fields["Number_of_sentences"])
+        except (KeyError, ValueError):
+            continue
+
+        elapsed = parse_triple(fields.get("Elapsed_seconds_to_tokenize_all_sentences", ""))
+        sps = parse_triple(fields.get("Sentences_per_second", ""))
+        if elapsed is None or sps is None:
+            continue
+
+        case = {
+            "label": label,
+            "warmup": warmup,
+            "sentences": sentences,
+            "elapsed_min": elapsed[0],
+            "elapsed_avg": elapsed[1],
+            "elapsed_max": elapsed[2],
+            "sps_min": sps[0],
+            "sps_avg": sps[1],
+            "sps_max": sps[2],
+        }
+
+        elapsed_wo = parse_triple(
+            fields.get("Elapsed_seconds_without_startup_estimate", "")
         )
+        sps_wo = parse_triple(
+            fields.get("Sentences_per_second_without_startup_estimate", "")
+        )
+        if elapsed_wo is not None and sps_wo is not None:
+            case["elapsed_wo_startup_min"] = elapsed_wo[0]
+            case["elapsed_wo_startup_avg"] = elapsed_wo[1]
+            case["elapsed_wo_startup_max"] = elapsed_wo[2]
+            case["sps_wo_startup_min"] = sps_wo[0]
+            case["sps_wo_startup_avg"] = sps_wo[1]
+            case["sps_wo_startup_max"] = sps_wo[2]
+
+        cases.append(case)
     return cases
 
 
@@ -108,15 +155,19 @@ def bar_panel(
     return "\n".join(lines)
 
 
-def choose_layout(layout: str, max_width: int) -> str:
+def choose_layout(layout: str, max_width: int, panel_count: int) -> str:
     if layout != "auto":
         return layout
-    if 0 < max_width < 1100:
+    if panel_count >= 4 and 0 < max_width < 1100:
         return "vertical"
     return "horizontal"
 
 
-def size_for_layout(layout: str):
+def size_for_layout(layout: str, panel_count: int):
+    if panel_count >= 4:
+        if layout == "vertical":
+            return 920, 1460
+        return 1200, 780
     if layout == "vertical":
         return 920, 760
     return 1200, 440
@@ -129,34 +180,73 @@ def maybe_scale(width: int, height: int, max_width: int):
     return int(round(width * ratio)), int(round(height * ratio))
 
 
-def panel_geometry(layout: str, width: int, height: int):
+def panel_geometry(layout: str, width: int, height: int, panel_count: int, top: int):
     outer = 24
-    top = 76
+    gap_x = 26
+    gap_y = 20
     if layout == "vertical":
-        gap = 18
-        panel_w = width - outer * 2
-        panel_h = int((height - top - outer - gap) / 2)
-        return (
-            (outer, top, panel_w, panel_h),
-            (outer, top + panel_h + gap, panel_w, panel_h),
-        )
+        cols = 1
+    else:
+        cols = 1 if panel_count == 1 else 2
+    rows = (panel_count + cols - 1) // cols
 
-    gap = 32
-    panel_w = int((width - outer * 2 - gap) / 2)
-    panel_h = height - top - 34
-    return (
-        (outer, top, panel_w, panel_h),
-        (outer + panel_w + gap, top, panel_w, panel_h),
-    )
+    panel_w = int((width - outer * 2 - gap_x * (cols - 1)) / cols)
+    panel_h = int((height - top - outer - gap_y * (rows - 1)) / rows)
+    panels = []
+    for idx in range(panel_count):
+        row = idx // cols
+        col = idx % cols
+        x = outer + col * (panel_w + gap_x)
+        y = top + row * (panel_h + gap_y)
+        panels.append((x, y, panel_w, panel_h))
+    return panels
 
 
 def render_svg(cases, title: str, layout: str, max_width: int):
-    selected_layout = choose_layout(layout, max_width)
-    base_w, base_h = size_for_layout(selected_layout)
-    width, height = maybe_scale(base_w, base_h, max_width)
-    (p1x, p1y, p1w, p1h), (p2x, p2y, p2w, p2h) = panel_geometry(
-        selected_layout, width, height
+    has_wo_startup = all(
+        "elapsed_wo_startup_avg" in c and "sps_wo_startup_avg" in c for c in cases
     )
+    panels = [
+        {
+            "title": "Elapsed_seconds_to_tokenize_all_sentences (avg, startup-included)",
+            "value_key": "elapsed_avg",
+            "color": "#2563eb",
+            "suffix": "s",
+            "lower_is_better": True,
+        },
+        {
+            "title": "Sentences_per_second (avg, startup-included)",
+            "value_key": "sps_avg",
+            "color": "#059669",
+            "suffix": "",
+            "lower_is_better": False,
+        },
+    ]
+    if has_wo_startup:
+        panels.extend(
+            [
+                {
+                    "title": "Elapsed_seconds_without_startup_estimate (avg)",
+                    "value_key": "elapsed_wo_startup_avg",
+                    "color": "#7c3aed",
+                    "suffix": "s",
+                    "lower_is_better": True,
+                },
+                {
+                    "title": "Sentences_per_second_without_startup_estimate (avg)",
+                    "value_key": "sps_wo_startup_avg",
+                    "color": "#d97706",
+                    "suffix": "",
+                    "lower_is_better": False,
+                },
+            ]
+        )
+
+    selected_layout = choose_layout(layout, max_width, len(panels))
+    base_w, base_h = size_for_layout(selected_layout, len(panels))
+    width, height = maybe_scale(base_w, base_h, max_width)
+    top = 96 if has_wo_startup else 76
+    panel_rects = panel_geometry(selected_layout, width, height, len(panels), top)
 
     lines = []
     lines.append(
@@ -171,34 +261,27 @@ def render_svg(cases, title: str, layout: str, max_width: int):
         lines.append(
             f'<text x="24" y="56" font-size="12" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" fill="#475569">Number_of_sentences: {sent}</text>'
         )
-    lines.append(
-        bar_panel(
-            x0=p1x,
-            y0=p1y,
-            w=p1w,
-            h=p1h,
-            title="Elapsed_seconds_to_tokenize_all_sentences (avg)",
-            cases=cases,
-            value_key="elapsed_avg",
-            color="#2563eb",
-            suffix="s",
-            lower_is_better=True,
+    if has_wo_startup:
+        lines.append(
+            '<text x="24" y="74" font-size="12" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" fill="#64748b">Startup-included metrics and startup-subtracted estimates are shown.</text>'
         )
-    )
-    lines.append(
-        bar_panel(
-            x0=p2x,
-            y0=p2y,
-            w=p2w,
-            h=p2h,
-            title="Sentences_per_second (avg)",
-            cases=cases,
-            value_key="sps_avg",
-            color="#059669",
-            suffix="",
-            lower_is_better=False,
+
+    for panel, rect in zip(panels, panel_rects):
+        px, py, pw, ph = rect
+        lines.append(
+            bar_panel(
+                x0=px,
+                y0=py,
+                w=pw,
+                h=ph,
+                title=panel["title"],
+                cases=cases,
+                value_key=panel["value_key"],
+                color=panel["color"],
+                suffix=panel["suffix"],
+                lower_is_better=panel["lower_is_better"],
+            )
         )
-    )
     lines.append("</svg>")
     return "\n".join(lines)
 

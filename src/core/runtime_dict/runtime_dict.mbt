@@ -223,6 +223,35 @@ fn build_surface_index(
 }
 
 ///|
+fn connection_index_or_missing_from_map(
+  id_to_index : @hashmap.HashMap[Int, Int],
+  raw_id : Int,
+) -> Int {
+  match id_to_index.get(raw_id) {
+    Some(index) => index
+    None => -1
+  }
+}
+
+///|
+fn remap_entry_connection_ids(
+  entries : Array[@types.DictEntry],
+  id_to_index : @hashmap.HashMap[Int, Int],
+) -> Unit {
+  for i in 0..<entries.length() {
+    let entry = entries[i]
+    entries[i] = {
+      ..entry,
+      left_id: connection_index_or_missing_from_map(id_to_index, entry.left_id),
+      right_id: connection_index_or_missing_from_map(
+        id_to_index,
+        entry.right_id,
+      ),
+    }
+  }
+}
+
+///|
 fn parse_and_set_runtime(bytes : BytesView) -> Bool {
   let header_size = 24
   let record_size = 24
@@ -343,6 +372,7 @@ fn parse_and_set_runtime(bytes : BytesView) -> Bool {
   for i in 0..<costs.length() {
     costs[i] = read_i16_le(bytes, costs_offset + i * 2)
   }
+  remap_entry_connection_ids(entries, id_to_index)
   let (surface_index, max_surface_len) = build_surface_index(entries)
   runtime_entries.val = entries
   runtime_surface_index.val = surface_index
@@ -363,20 +393,37 @@ pub fn load_dic_bin(bytes : BytesView) -> Bool {
 }
 
 ///|
-pub fn connection_cost(right_id : Int, left_id : Int) -> Int {
+pub fn connection_id_to_index_or_missing(raw_id : Int) -> Int {
+  if !runtime_ready.val {
+    return -1
+  }
+  connection_index_or_missing_from_map(
+    runtime_connection_id_to_index.val,
+    raw_id,
+  )
+}
+
+///|
+pub fn connection_cost_by_index(right_index : Int, left_index : Int) -> Int {
   if !runtime_ready.val {
     return default_connection_cost
   }
-  let right_index = runtime_connection_id_to_index.val.get(right_id)
-  let left_index = runtime_connection_id_to_index.val.get(left_id)
-  if right_index is Some(ri) && left_index is Some(li) {
-    let width = runtime_connection_width.val
-    let flat = ri * width + li
-    if flat >= 0 && flat < runtime_connection_costs.val.length() {
-      return runtime_connection_costs.val[flat]
-    }
+  if right_index < 0 || left_index < 0 {
+    return runtime_connection_default_cost.val
+  }
+  let width = runtime_connection_width.val
+  let flat = right_index * width + left_index
+  if flat >= 0 && flat < runtime_connection_costs.val.length() {
+    return runtime_connection_costs.val[flat]
   }
   runtime_connection_default_cost.val
+}
+
+///|
+pub fn connection_cost(right_id : Int, left_id : Int) -> Int {
+  let right_index = connection_id_to_index_or_missing(right_id)
+  let left_index = connection_id_to_index_or_missing(left_id)
+  connection_cost_by_index(right_index, left_index)
 }
 
 ///|
