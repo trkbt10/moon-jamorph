@@ -2,8 +2,9 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
-PKG_DIR="$ROOT_DIR/cmd/wasm_api"
-WASM_SRC="$ROOT_DIR/_build/wasm/release/build/cmd/wasm_api/wasm_api.wasm"
+PKG_DIR="cmd/wasm_api"
+WASM_BUILD_ROOT="$ROOT_DIR/_build/wasm/release/build"
+WASM_SRC_DEFAULT="$WASM_BUILD_ROOT/cmd/wasm_api/wasm_api.wasm"
 WASM_DST_DIR="$ROOT_DIR/npm/micado-wasm/dist"
 WASM_DST="$WASM_DST_DIR/micado_wasm.wasm"
 
@@ -27,6 +28,16 @@ if moon build --help | grep -q -- '--manifest-path'; then
     "$PKG_DIR"
 else
   moon build -C "$ROOT_DIR" --target wasm "$PKG_DIR"
+fi
+
+WASM_SRC="$WASM_SRC_DEFAULT"
+if [[ ! -f "$WASM_SRC" ]]; then
+  WASM_SRC="$(find "$WASM_BUILD_ROOT" -type f -name 'wasm_api.wasm' | head -n 1 || true)"
+fi
+if [[ -z "$WASM_SRC" || ! -f "$WASM_SRC" ]]; then
+  echo "[build_wasm_npm] error: wasm output not found under $WASM_BUILD_ROOT" >&2
+  find "$WASM_BUILD_ROOT" -maxdepth 6 -type f -name '*.wasm' -print || true
+  exit 1
 fi
 cp "$WASM_SRC" "$WASM_DST"
 
