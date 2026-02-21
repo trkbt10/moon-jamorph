@@ -31,7 +31,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y mecab mecab-ipadic mecab-ipadic-utf8
           mecab -v
-          mecab-config --dicdir
+          if command -v mecab-config >/dev/null 2>&1; then
+            mecab-config --dicdir
+          else
+            mecab -D | sed -n 's/^dicdir: //p'
+          fi
 
       - name: Update MoonBit dependencies
         run: |
