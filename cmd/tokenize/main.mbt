@@ -20,19 +20,6 @@ struct CLIOptions {
 }
 
 ///|
-fn read_stdin_utf8() -> String {
-  let buf = @buffer.new(size_hint=1 << 20)
-  while true {
-    let ch = c_getchar()
-    if ch < 0 {
-      break
-    }
-    buf.write_byte(ch.to_byte())
-  }
-  @utf8.decode_lossy(buf.to_bytes()[:])
-}
-
-///|
 fn usage() -> Unit {
   println("micado tokenize CLI")
   println("usage: cat input.txt | cmd/tokenize [options]")
@@ -154,16 +141,28 @@ fn parse_cli_args(args : Array[String]) -> (CLIOptions, String?, Bool) {
 }
 
 ///|
-fn split_non_empty_lines(text : String) -> Array[String] {
-  let lines : Array[String] = []
-  for raw in text.split("\n").map(StringView::to_string) {
-    let line = raw.replace_all(old="\r", new="")
-    if line.length() == 0 {
-      continue
-    }
-    lines.push(line)
+fn decode_line_buffer(line_buf : @buffer.Buffer) -> String {
+  let raw = @utf8.decode_lossy(line_buf.to_bytes()[:])
+  if raw.length() > 0 && raw.unsafe_get(raw.length() - 1) == '\r' {
+    raw.unsafe_substring(start=0, end=raw.length() - 1)
+  } else {
+    raw
   }
-  lines
+}
+
+///|
+fn process_line(
+  tokenizer : @tok.Tokenizer,
+  output_mode : OutputMode,
+  line : String,
+) -> Int {
+  if output_mode == OUTPUT_WAKATI {
+    let tokens = tokenizer.tokenize(line)
+    println(tokens.map(token => token.surface).join(" "))
+    tokens.length()
+  } else {
+    tokenizer.token_count(line)
+  }
 }
 
 ///|
@@ -179,23 +178,40 @@ fn main {
     usage()
     return
   }
-  let input = read_stdin_utf8()
-  let lines = split_non_empty_lines(input)
-  if lines.length() == 0 {
+  let tokenizer = @tok.Tokenizer::new().set_edition(options.edition)
+  let line_buf = @buffer.new(size_hint=256)
+  let mut sentence_total = 0
+  let mut token_total = 0
+  while true {
+    let ch = c_getchar()
+    if ch < 0 {
+      break
+    }
+    if ch == 0x0A {
+      let line = decode_line_buffer(line_buf)
+      line_buf.reset()
+      if line.length() == 0 {
+        continue
+      }
+      sentence_total = sentence_total + 1
+      token_total = token_total +
+        process_line(tokenizer, options.output_mode, line)
+    } else {
+      line_buf.write_byte(ch.to_byte())
+    }
+  }
+  let tail = decode_line_buffer(line_buf)
+  if tail.length() > 0 {
+    sentence_total = sentence_total + 1
+    token_total = token_total +
+      process_line(tokenizer, options.output_mode, tail)
+  }
+  if sentence_total == 0 {
     println("error: no input text from stdin")
     usage()
     return
   }
-  let tokenizer = @tok.Tokenizer::new().set_edition(options.edition)
-  let mut token_total = 0
-  for line in lines {
-    let tokens = tokenizer.tokenize(line)
-    token_total = token_total + tokens.length()
-    if options.output_mode == OUTPUT_WAKATI {
-      println(tokens.map(token => token.surface).join(" "))
-    }
-  }
   if options.output_mode == OUTPUT_COUNT {
-    println("sentences=\{lines.length()} tokens=\{token_total}")
+    println("sentences=\{sentence_total} tokens=\{token_total}")
   }
 }

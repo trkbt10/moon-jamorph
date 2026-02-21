@@ -70,6 +70,22 @@ pub fn Tokenizer::tokenize(self : Tokenizer, input : String) -> Array[Morpheme] 
 }
 
 ///|
+pub fn Tokenizer::token_count(self : Tokenizer, input : String) -> Int {
+  if input.length() == 0 {
+    return 0
+  }
+  let chars = input.to_array()
+  let (classes, run_lengths) = if self.use_lexmatch_scanner {
+    @scanner.scan_char_classes_lexmatch_chars_with_run_lengths(chars)
+  } else {
+    @scanner.scan_char_classes_manual_chars_with_run_lengths(chars)
+  }
+  @viterbi.decode_viterbi_token_count_with_precomputed(
+    chars, classes, run_lengths,
+  )
+}
+
+///|
 pub fn Tokenizer::tokenize_utf8(
   self : Tokenizer,
   input : BytesView,
@@ -95,4 +111,9 @@ pub fn tokenize(input : String) -> Array[Morpheme] {
 ///|
 pub fn tokenize_utf8(input : BytesView) -> Array[Morpheme] {
   Tokenizer::new().tokenize_utf8(input)
+}
+
+///|
+pub fn token_count(input : String) -> Int {
+  Tokenizer::new().token_count(input)
 }

@@ -6,6 +6,10 @@ import {
 }
 
 // Values
+pub fn decode_viterbi_token_count_with_classes(String, Array[@types.CharClass]) -> Int
+
+pub fn decode_viterbi_token_count_with_precomputed(Array[Char], Array[@types.CharClass], Array[Int]) -> Int
+
 pub fn decode_viterbi_with_classes(String, Array[@types.CharClass]) -> Array[@types.Morpheme]
 
 pub fn decode_viterbi_with_precomputed(String, Array[Char], Array[@types.CharClass], Array[Int]) -> Array[@types.Morpheme]

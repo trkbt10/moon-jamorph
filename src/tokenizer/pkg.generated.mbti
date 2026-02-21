@@ -18,6 +18,8 @@ pub const MODE_NORMAL : Int = 0
 
 pub const MODE_SEARCH : Int = 1
 
+pub fn token_count(String) -> Int
+
 pub fn tokenize(String) -> Array[@types.Morpheme]
 
 pub fn tokenize_utf8(BytesView) -> Array[@types.Morpheme]
@@ -34,6 +36,7 @@ pub fn Tokenizer::new() -> Self
 pub fn Tokenizer::set_edition(Self, Int) -> Self
 pub fn Tokenizer::set_mode(Self, Int) -> Self
 pub fn Tokenizer::set_use_lexmatch_scanner(Self, Bool) -> Self
+pub fn Tokenizer::token_count(Self, String) -> Int
 pub fn Tokenizer::tokenize(Self, String) -> Array[@types.Morpheme]
 pub fn Tokenizer::tokenize_utf8(Self, BytesView) -> Array[@types.Morpheme]
 
