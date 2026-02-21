@@ -144,29 +144,31 @@ bench/benchmark/quick_compare_latest.txt
 bench/benchmark/quick_compare_latest.svg
 ```
 
-実測結果（macOS, 2026-02-20, Apple Silicon / `--runs 10 --trials 10 --copies 2000`）:
+<!-- BENCHMARK_RESULTS_BEGIN -->
+実測結果（`bench/benchmark/quick_compare_latest.txt` から自動更新）:
 
 ```text
 [micado/full]
-Warmup: 0.164868
+Warmup: 0.130545
 Number_of_sentences: 20000
-Elapsed_seconds_to_tokenize_all_sentences: [0.161626,0.165103,0.170895]
-Sentences_per_second: [117030.93,121136.50,123742.47]
+Elapsed_seconds_to_tokenize_all_sentences: [0.094497,0.096990,0.102400]
+Sentences_per_second: [195312.50,206206.83,211646.93]
 
 [mecab/ipadic]
-Warmup: 0.181750
+Warmup: 0.184974
 Number_of_sentences: 20000
-Elapsed_seconds_to_tokenize_all_sentences: [0.173248,0.175806,0.181069]
-Sentences_per_second: [110455.13,113761.76,115441.45]
+Elapsed_seconds_to_tokenize_all_sentences: [0.174345,0.176482,0.180583]
+Sentences_per_second: [110752.40,113326.00,114715.08]
 
 [vibrato/ipadic-mecab-2_7_0]
-Warmup: 0.034950
+Warmup: 0.031413
 Number_of_sentences: 20000
-Elapsed_seconds_to_tokenize_all_sentences: [0.029864,0.030526,0.031819]
-Sentences_per_second: [628564.40,655189.58,669694.52]
+Elapsed_seconds_to_tokenize_all_sentences: [0.030576,0.031103,0.032137]
+Sentences_per_second: [622339.34,643014.58,654109.04]
 ```
 
-![micado vs MeCab vs Vibrato benchmark](bench/benchmark/quick_compare_latest.svg)
+グラフ出力: `bench/benchmark/quick_compare_latest.svg`（ローカル生成・Git非追跡）
+<!-- BENCHMARK_RESULTS_END -->
 
 ## 辞書運用方針
 

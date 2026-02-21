@@ -4,6 +4,7 @@ target/
 target
 .mooncakes/
 .moonagent/
+tmp/
 
 # docs
 *.md
@@ -16,3 +17,7 @@ tools/dict-compiler/.cache/
 
 # generated large dictionary sources
 src/dict/**/dict_*_generated.mbt
+
+# generated benchmark artifacts
+bench/benchmark/quick_compare_*.txt
+bench/benchmark/quick_compare_*.svg

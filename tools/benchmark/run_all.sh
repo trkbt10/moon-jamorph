@@ -152,6 +152,7 @@ OUT_TXT="${OUT_DIR}/quick_compare_${DATE_TAG}.txt"
 OUT_SVG="${OUT_DIR}/quick_compare_${DATE_TAG}.svg"
 LATEST_TXT="${OUT_DIR}/quick_compare_latest.txt"
 LATEST_SVG="${OUT_DIR}/quick_compare_latest.svg"
+README_FILE="${ROOT_DIR}/README.mbt.md"
 
 echo "[run_all] running micado + mecab benchmark..."
 "${ROOT_DIR}/tools/benchmark/quick_compare.sh" \
@@ -285,9 +286,13 @@ python3 "${ROOT_DIR}/tools/benchmark/render_compare_chart.py" \
 
 cp "$OUT_TXT" "$LATEST_TXT"
 cp "$OUT_SVG" "$LATEST_SVG"
+python3 "${ROOT_DIR}/tools/benchmark/update_readme_benchmark.py" \
+  --readme "$README_FILE" \
+  --benchmark-text "$LATEST_TXT"
 
 echo "[run_all] done"
 echo "  benchmark text: $OUT_TXT"
 echo "  benchmark svg : $OUT_SVG"
 echo "  latest text   : $LATEST_TXT"
 echo "  latest svg    : $LATEST_SVG"
+echo "  readme        : $README_FILE"
