@@ -159,37 +159,37 @@ bench/benchmark/quick_compare_latest.png
 
 ```text
 [micado/full]
-Warmup: 0.099132
-Warmup_startup_overhead_estimate: 0.006373
-Warmup_without_startup_estimate: 0.092759
+Warmup: 0.048463
+Warmup_startup_overhead_estimate: 0.007016
+Warmup_without_startup_estimate: 0.041447
 Number_of_sentences: 20000
-Elapsed_seconds_to_tokenize_all_sentences: [0.095185,0.096332,0.097763]
-Sentences_per_second: [204576.37,207615.33,210117.14]
-Startup_overhead_seconds_estimate: [0.005909,0.006275,0.006703]
-Elapsed_seconds_without_startup_estimate: [0.089276,0.090057,0.091060]
-Sentences_per_second_without_startup_estimate: [219635.41,222081.57,224024.37]
+Elapsed_seconds_to_tokenize_all_sentences: [0.043505,0.044134,0.045193]
+Sentences_per_second: [442546.41,453165.36,459717.27]
+Startup_overhead_seconds_estimate: [0.005730,0.006015,0.006438]
+Elapsed_seconds_without_startup_estimate: [0.037775,0.038119,0.038755]
+Sentences_per_second_without_startup_estimate: [516062.44,524672.74,529450.69]
 
 [mecab/ipadic]
-Warmup: 0.180621
-Warmup_startup_overhead_estimate: 0.006672
-Warmup_without_startup_estimate: 0.173949
+Warmup: 0.176983
+Warmup_startup_overhead_estimate: 0.006401
+Warmup_without_startup_estimate: 0.170582
 Number_of_sentences: 20000
-Elapsed_seconds_to_tokenize_all_sentences: [0.174141,0.176255,0.179488]
-Sentences_per_second: [111428.06,113471.96,114849.46]
-Startup_overhead_seconds_estimate: [0.006139,0.006487,0.006896]
-Elapsed_seconds_without_startup_estimate: [0.168002,0.169768,0.172592]
-Sentences_per_second_without_startup_estimate: [115880.23,117807.83,119046.20]
+Elapsed_seconds_to_tokenize_all_sentences: [0.173306,0.175538,0.179938]
+Sentences_per_second: [111149.40,113935.44,115402.81]
+Startup_overhead_seconds_estimate: [0.006118,0.006372,0.006757]
+Elapsed_seconds_without_startup_estimate: [0.167188,0.169166,0.173181]
+Sentences_per_second_without_startup_estimate: [115486.11,118227.07,119625.81]
 
 [vibrato/ipadic-mecab-2_7_0]
-Warmup: 0.199524
-Warmup_startup_overhead_estimate: 0.131749
-Warmup_without_startup_estimate: 0.067776
+Warmup: 0.216959
+Warmup_startup_overhead_estimate: 0.135492
+Warmup_without_startup_estimate: 0.081466
 Number_of_sentences: 20000
-Elapsed_seconds_to_tokenize_all_sentences: [0.167144,0.171198,0.178776]
-Sentences_per_second: [111871.70,116823.71,119657.02]
-Startup_overhead_seconds_estimate: [0.131096,0.133127,0.135297]
-Elapsed_seconds_without_startup_estimate: [0.036048,0.038071,0.043480]
-Sentences_per_second_without_startup_estimate: [459986.80,525329.01,554809.32]
+Elapsed_seconds_to_tokenize_all_sentences: [0.166726,0.170203,0.176622]
+Sentences_per_second: [113236.03,117506.98,119957.00]
+Startup_overhead_seconds_estimate: [0.130243,0.132174,0.134707]
+Elapsed_seconds_without_startup_estimate: [0.036484,0.038028,0.041916]
+Sentences_per_second_without_startup_estimate: [477149.70,525922.69,548189.76]
 ```
 
 シェア向けPNG: `bench/benchmark/quick_compare_latest.png`（自動リサイズ・Git非追跡）
