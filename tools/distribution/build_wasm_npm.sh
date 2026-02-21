@@ -3,8 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 PKG_DIR="cmd/wasm_api"
-WASM_BUILD_ROOT="$ROOT_DIR/_build/wasm/release/build"
-WASM_SRC_DEFAULT="$WASM_BUILD_ROOT/cmd/wasm_api/wasm_api.wasm"
+MOON_TARGET_DIR="$ROOT_DIR/_build"
 WASM_DST_DIR="$ROOT_DIR/npm/micado-wasm/dist"
 WASM_DST="$WASM_DST_DIR/micado_wasm.wasm"
 
@@ -24,19 +23,30 @@ mkdir -p "$WASM_DST_DIR"
 if moon build --help | grep -q -- '--manifest-path'; then
   moon build \
     --manifest-path "$ROOT_DIR/moon.mod.json" \
+    --target-dir "$MOON_TARGET_DIR" \
     --target wasm \
     "$PKG_DIR"
 else
   moon build -C "$ROOT_DIR" --target wasm "$PKG_DIR"
 fi
 
-WASM_SRC="$WASM_SRC_DEFAULT"
-if [[ ! -f "$WASM_SRC" ]]; then
-  WASM_SRC="$(find "$WASM_BUILD_ROOT" -type f -name 'wasm_api.wasm' | head -n 1 || true)"
+WASM_SRC=""
+if [[ -d "$MOON_TARGET_DIR" ]]; then
+  wasm_candidates="$(find "$MOON_TARGET_DIR" -type f -name 'wasm_api.wasm' 2>/dev/null || true)"
+  if [[ -n "$wasm_candidates" ]]; then
+    WASM_SRC="$(
+      printf '%s\n' "$wasm_candidates" | grep '/wasm/' | head -n 1 || true
+    )"
+    if [[ -z "$WASM_SRC" ]]; then
+      WASM_SRC="$(printf '%s\n' "$wasm_candidates" | head -n 1)"
+    fi
+  fi
 fi
 if [[ -z "$WASM_SRC" || ! -f "$WASM_SRC" ]]; then
-  echo "[build_wasm_npm] error: wasm output not found under $WASM_BUILD_ROOT" >&2
-  find "$WASM_BUILD_ROOT" -maxdepth 6 -type f -name '*.wasm' -print || true
+  echo "[build_wasm_npm] error: wasm output not found under $MOON_TARGET_DIR" >&2
+  if [[ -d "$MOON_TARGET_DIR" ]]; then
+    find "$MOON_TARGET_DIR" -maxdepth 8 -type f -name '*.wasm' -print || true
+  fi
   exit 1
 fi
 cp "$WASM_SRC" "$WASM_DST"
