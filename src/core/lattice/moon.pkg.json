@@ -5,22 +5,6 @@
       "alias": "types"
     },
     {
-      "path": "username/micado_mbt/src/dict/nano",
-      "alias": "nano"
-    },
-    {
-      "path": "username/micado_mbt/src/dict/mini",
-      "alias": "mini"
-    },
-    {
-      "path": "username/micado_mbt/src/dict/standard",
-      "alias": "standard"
-    },
-    {
-      "path": "username/micado_mbt/src/dict/full",
-      "alias": "full"
-    },
-    {
       "path": "username/micado_mbt/src/core/unknown",
       "alias": "unknown"
     }

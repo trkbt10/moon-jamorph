@@ -41,7 +41,6 @@
 ├── src/
 │   ├── scanner/utf16, scanner/utf8
 │   ├── core/da_trie, lattice, scorer, unknown, viterbi
-│   ├── dict/nano, mini, standard, full
 │   ├── tokenizer
 │   └── types
 ├── cmd/
@@ -55,7 +54,6 @@
 │   ├── dict-compiler
 │   ├── distribution
 │   └── benchmark
-├── test/accuracy, test/regression
 ├── bench/corpus
 ├── bench/lexmatch_vs_manual, bench/throughput
 └── npm/micado-wasm
@@ -86,6 +84,20 @@ moon test
 moon check
 ```
 
+## 実行時スモーク検証（CLI + Wasm）
+
+外付け MeCab 辞書 (`--dicdir`) と `.dic.bin` の両方を一度に検証:
+
+```sh
+tools/distribution/verify_cli_wasm.sh
+```
+
+- CLI (`cmd/main`, native target) を実行し、JSON/分かち書き出力を検証
+- 非UTF-8辞書（例: `ipadic`）は `config-charset` を検出して UTF-8 へ変換
+- Wasm + `.dic.bin` をビルドして Node スモークを実行
+- 入力文は `npm/micado-wasm/demo/smoke-sentence.txt` を CLI/Wasm で共通利用
+- CI では `.github/workflows/runtime-smoke.yml` から同じ検証を実行
+
 ## 実行方法
 
 `ipadic_demo`:
@@ -103,7 +115,7 @@ moon run cmd/neologd_demo
 MeCab `dicdir` を使う CLI（`cmd/main`）:
 
 ```sh
-moon run --target native cmd/main -- -d /path/to/mecab/dic -O mecab "東京大学"
+moon run --target native cmd/main -- -d /path/to/mecab/dic -O mecab "吾輩は猫である。"
 moon run --target native cmd/main -- -d /path/to/mecab/dic -O json "太郎は走った。"
 ```
 
@@ -155,23 +167,13 @@ Sentences_per_second: [628564.40,655189.58,669694.52]
 
 ![micado vs MeCab vs Vibrato benchmark](bench/benchmark/quick_compare_latest.svg)
 
-## 辞書生成
+## 辞書運用方針
 
-IPADIC:
+`src/dict` は廃止済みです。
 
-```sh
-tools/dict-compiler/scripts/build_ipadic_generated.sh 3000
-tools/dict-compiler/scripts/build_connection_generated.sh
-```
-
-NEologd:
-
-```sh
-tools/dict-compiler/scripts/build_neologd_generated.sh /path/to/mecab-ipadic-neologd-0.0.7 5000
-tools/dict-compiler/scripts/build_connection_generated.sh
-```
-
-DA 配列生成には `tools/dict-compiler/cmd/emit_da` を内部利用します。
+- ネイティブCLIは外付け MeCab 辞書（`--dicdir`）を利用します。
+- Web/npm は `.dic.bin` を実行時ロードします。
+- `tools/dict-compiler/scripts/build_*_generated.sh` は廃止され、実行するとエラー終了します。
 
 ## Wasm / npm 配布
 

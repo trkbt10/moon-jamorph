@@ -48,7 +48,7 @@ fn usage() -> Unit {
   println("")
   println("examples:")
   println(
-    "  moon run --target native cmd/main -- -d /opt/homebrew/lib/mecab/dic/ipadic -O mecab \"東京大学\"",
+    "  moon run --target native cmd/main -- -d /opt/homebrew/lib/mecab/dic/ipadic -O mecab \"吾輩は猫である。\"",
   )
   println(
     "  moon run --target native cmd/main -- -d /opt/homebrew/lib/mecab/dic/unidic -O json \"太郎は走った。\"",
@@ -452,6 +452,16 @@ test "parse_mecab_output_tokens should parse unidic tab-style feature" {
 }
 
 ///|
+fn should_skip_mecab_dicdir_golden(err : String?) -> Bool {
+  match err {
+    Some(msg) =>
+      msg.find("mecab dicdir backend is available only on native/llvm target")
+      is Some(_)
+    None => false
+  }
+}
+
+///|
 test "mecab unidic golden: 吾輩は猫である" {
   let input = "吾輩は猫である。名前はまだ無い。"
   let expected = [
@@ -468,6 +478,10 @@ test "mecab unidic golden: 吾輩は猫である" {
     "/opt/homebrew/lib/mecab/dic/unidic",
     FORMAT_MECAB,
   )
+  if should_skip_mecab_dicdir_golden(err) {
+    inspect(true, content="true")
+    return
+  }
   inspect(err, content="None")
   assert_eq(trim_trailing_newlines(out), expected.join("\n"))
 }
@@ -503,6 +517,10 @@ test "mecab unidic golden: メロスは激怒した" {
     "/opt/homebrew/lib/mecab/dic/unidic",
     FORMAT_MECAB,
   )
+  if should_skip_mecab_dicdir_golden(err) {
+    inspect(true, content="true")
+    return
+  }
   inspect(err, content="None")
   assert_eq(trim_trailing_newlines(out), expected.join("\n"))
 }
@@ -534,6 +552,10 @@ test "mecab unidic golden: 春はあけぼの" {
     "/opt/homebrew/lib/mecab/dic/unidic",
     FORMAT_MECAB,
   )
+  if should_skip_mecab_dicdir_golden(err) {
+    inspect(true, content="true")
+    return
+  }
   inspect(err, content="None")
   assert_eq(trim_trailing_newlines(out), expected.join("\n"))
 }

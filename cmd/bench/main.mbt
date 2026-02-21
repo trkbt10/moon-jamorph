@@ -1,6 +1,6 @@
 ///|
 fn main {
-  let text = "すもももももももものうち東京大学東京都大学院自然言語処理abc123"
+  let text = "すもももももももものうち吾輩は猫である。名前はまだ無い。abc123"
   let count = 10U
   println("== Scanner benchmark ==")
   println(@bench0.benchmark_scanner(text, count~))

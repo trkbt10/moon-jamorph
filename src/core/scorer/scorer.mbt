@@ -8,16 +8,11 @@ let legacy_connection_matrix_4x4 : ReadOnlyArray[Int] = [
 ]
 
 ///|
-fn to_compact_id(raw_id : Int) -> Int {
-  @standard.connection_id_to_compact_value(raw_id)
-}
-
-///|
 pub fn compact_connection_id(raw_id : Int) -> Int {
   if raw_id >= 0 && raw_id < 4 {
     raw_id
   } else {
-    to_compact_id(raw_id)
+    -1
   }
 }
 
@@ -28,13 +23,12 @@ pub fn connection_cost_with_compact(
   right_compact_id : Int,
   left_compact_id : Int,
 ) -> Int {
+  let _ = right_compact_id
+  let _ = left_compact_id
   if right_id >= 0 && right_id < 4 && left_id >= 0 && left_id < 4 {
     return legacy_connection_matrix_4x4[right_id * 4 + left_id]
   }
-  if right_compact_id < 0 || left_compact_id < 0 {
-    return unknown_connection_penalty
-  }
-  @standard.connection_matrix_compact_value(right_compact_id, left_compact_id)
+  unknown_connection_penalty
 }
 
 ///|

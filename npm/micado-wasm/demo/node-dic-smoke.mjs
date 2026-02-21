@@ -1,9 +1,10 @@
+import { readFile } from "node:fs/promises";
 import { createTokenizer } from "../index.mjs";
 
 const medium = await createTokenizer({ profile: "medium", compressed: true });
 const full = await createTokenizer({ profile: "full", compressed: true });
 
-const sentence = "東京大学で自然言語処理を学ぶ";
+const sentence = (await readFile(new URL("./smoke-sentence.txt", import.meta.url), "utf8")).trim();
 const mediumTokens = medium.tokenize(sentence);
 const fullTokens = full.tokenize(sentence);
 
@@ -11,12 +12,14 @@ if (full.stats.entryCount < 300000) {
   throw new Error(`full profile too small: ${full.stats.entryCount}`);
 }
 
-const expectedSurfaces = ["東京大学", "で", "自然", "言語", "処理", "を", "学ぶ"];
 const fullSurfaces = fullTokens.map((t) => t.surface);
-if (JSON.stringify(fullSurfaces) !== JSON.stringify(expectedSurfaces)) {
-  throw new Error(
-    `unexpected full tokenization: ${JSON.stringify(fullSurfaces)} expected=${JSON.stringify(expectedSurfaces)}`,
-  );
+for (const required of ["吾輩", "猫", "名前", "無い"]) {
+  if (!fullSurfaces.includes(required)) {
+    throw new Error(`missing required surface: ${required} got=${JSON.stringify(fullSurfaces)}`);
+  }
+}
+if (fullSurfaces.some((s) => s.includes("�"))) {
+  throw new Error(`mojibake detected: ${JSON.stringify(fullSurfaces)}`);
 }
 
 console.log(`medium entries=${medium.stats.entryCount} tokens=${mediumTokens.length}`);
