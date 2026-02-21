@@ -4,6 +4,7 @@ target/
 target
 .mooncakes/
 .moonagent/
+__pycache__/
 tmp/
 
 # docs
@@ -21,3 +22,4 @@ src/dict/**/dict_*_generated.mbt
 # generated benchmark artifacts
 bench/benchmark/quick_compare_*.txt
 bench/benchmark/quick_compare_*.svg
+bench/benchmark/quick_compare_*.png

@@ -131,17 +131,21 @@ cat bench/corpus/aozora_openings.txt | moon run --target native cmd/tokenize -- 
 ## 軽量ベンチ比較
 
 `tools/benchmark/run_all.sh` を実行すると、`micado` / `mecab` / `vibrato` の比較を回して
-結果テキストと SVG グラフを自動生成します。
+結果テキストと SVG / PNG グラフを自動生成します。
 
 ```sh
 tools/benchmark/run_all.sh --dicdir /opt/homebrew/lib/mecab/dic/ipadic
 ```
+
+共有しやすい画像サイズにしたい場合は、`--png-max-width`（既定: `960`）と
+`--chart-layout auto|horizontal|vertical` を指定できます（既定: `auto`）。
 
 生成物:
 
 ```text
 bench/benchmark/quick_compare_latest.txt
 bench/benchmark/quick_compare_latest.svg
+bench/benchmark/quick_compare_latest.png
 ```
 
 <!-- BENCHMARK_RESULTS_BEGIN -->
@@ -149,25 +153,26 @@ bench/benchmark/quick_compare_latest.svg
 
 ```text
 [micado/full]
-Warmup: 0.130545
+Warmup: 0.102575
 Number_of_sentences: 20000
-Elapsed_seconds_to_tokenize_all_sentences: [0.094497,0.096990,0.102400]
-Sentences_per_second: [195312.50,206206.83,211646.93]
+Elapsed_seconds_to_tokenize_all_sentences: [0.101733,0.103777,0.106635]
+Sentences_per_second: [187555.68,192720.93,196593.04]
 
 [mecab/ipadic]
-Warmup: 0.184974
+Warmup: 0.176270
 Number_of_sentences: 20000
-Elapsed_seconds_to_tokenize_all_sentences: [0.174345,0.176482,0.180583]
-Sentences_per_second: [110752.40,113326.00,114715.08]
+Elapsed_seconds_to_tokenize_all_sentences: [0.174047,0.177058,0.181125]
+Sentences_per_second: [110420.98,112957.34,114911.49]
 
 [vibrato/ipadic-mecab-2_7_0]
-Warmup: 0.031413
+Warmup: 0.039321
 Number_of_sentences: 20000
-Elapsed_seconds_to_tokenize_all_sentences: [0.030576,0.031103,0.032137]
-Sentences_per_second: [622339.34,643014.58,654109.04]
+Elapsed_seconds_to_tokenize_all_sentences: [0.030822,0.031502,0.033923]
+Sentences_per_second: [589577.89,634875.13,648888.38]
 ```
 
-グラフ出力: `bench/benchmark/quick_compare_latest.svg`（ローカル生成・Git非追跡）
+シェア向けPNG: `bench/benchmark/quick_compare_latest.png`（自動リサイズ・Git非追跡）
+元SVG: `bench/benchmark/quick_compare_latest.svg`（ローカル生成・Git非追跡）
 <!-- BENCHMARK_RESULTS_END -->
 
 ## 辞書運用方針

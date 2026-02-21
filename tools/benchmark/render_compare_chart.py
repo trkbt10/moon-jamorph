@@ -42,6 +42,12 @@ def esc(s: str) -> str:
     )
 
 
+def short_label(s: str, max_len: int = 24) -> str:
+    if len(s) <= max_len:
+        return s
+    return s[: max_len - 3] + "..."
+
+
 def bar_panel(
     x0: int,
     y0: int,
@@ -62,8 +68,8 @@ def bar_panel(
     inner_w = right - left
     inner_h = bottom - top
     n = max(1, len(cases))
-    gap = 12
-    bar_w = max(24, int((inner_w - gap * (n - 1)) / n))
+    gap = 12 if n > 1 else 0
+    bar_w = max(20, int((inner_w - gap * (n - 1)) / n))
 
     values = [c[value_key] for c in cases]
     vmax = max(values) if values else 1.0
@@ -97,17 +103,66 @@ def bar_panel(
             f'<text x="{x + bar_w / 2:.1f}" y="{y - 6}" text-anchor="middle" font-size="11" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" fill="#111827">{val:.6g}{suffix}</text>'
         )
         lines.append(
-            f'<text x="{x + bar_w / 2:.1f}" y="{bottom + 14}" text-anchor="middle" font-size="11" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" fill="#374151">{esc(c["label"])}</text>'
+            f'<text x="{x + bar_w / 2:.1f}" y="{bottom + 14}" text-anchor="middle" font-size="11" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" fill="#374151">{esc(short_label(c["label"]))}</text>'
         )
     return "\n".join(lines)
 
 
-def render_svg(cases, title: str):
-    width = 1200
-    height = 440
+def choose_layout(layout: str, max_width: int) -> str:
+    if layout != "auto":
+        return layout
+    if 0 < max_width < 1100:
+        return "vertical"
+    return "horizontal"
+
+
+def size_for_layout(layout: str):
+    if layout == "vertical":
+        return 920, 760
+    return 1200, 440
+
+
+def maybe_scale(width: int, height: int, max_width: int):
+    if max_width <= 0 or width <= max_width:
+        return width, height
+    ratio = max_width / width
+    return int(round(width * ratio)), int(round(height * ratio))
+
+
+def panel_geometry(layout: str, width: int, height: int):
+    outer = 24
+    top = 76
+    if layout == "vertical":
+        gap = 18
+        panel_w = width - outer * 2
+        panel_h = int((height - top - outer - gap) / 2)
+        return (
+            (outer, top, panel_w, panel_h),
+            (outer, top + panel_h + gap, panel_w, panel_h),
+        )
+
+    gap = 32
+    panel_w = int((width - outer * 2 - gap) / 2)
+    panel_h = height - top - 34
+    return (
+        (outer, top, panel_w, panel_h),
+        (outer + panel_w + gap, top, panel_w, panel_h),
+    )
+
+
+def render_svg(cases, title: str, layout: str, max_width: int):
+    selected_layout = choose_layout(layout, max_width)
+    base_w, base_h = size_for_layout(selected_layout)
+    width, height = maybe_scale(base_w, base_h, max_width)
+    (p1x, p1y, p1w, p1h), (p2x, p2y, p2w, p2h) = panel_geometry(
+        selected_layout, width, height
+    )
+
     lines = []
-    lines.append(f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">')
-    lines.append('<rect x="0" y="0" width="1200" height="440" fill="#f8fafc"/>')
+    lines.append(
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">'
+    )
+    lines.append(f'<rect x="0" y="0" width="{width}" height="{height}" fill="#f8fafc"/>')
     lines.append(
         f'<text x="24" y="34" font-size="22" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" fill="#0f172a">{esc(title)}</text>'
     )
@@ -118,10 +173,10 @@ def render_svg(cases, title: str):
         )
     lines.append(
         bar_panel(
-            x0=24,
-            y0=76,
-            w=560,
-            h=330,
+            x0=p1x,
+            y0=p1y,
+            w=p1w,
+            h=p1h,
             title="Elapsed_seconds_to_tokenize_all_sentences (avg)",
             cases=cases,
             value_key="elapsed_avg",
@@ -132,10 +187,10 @@ def render_svg(cases, title: str):
     )
     lines.append(
         bar_panel(
-            x0=616,
-            y0=76,
-            w=560,
-            h=330,
+            x0=p2x,
+            y0=p2y,
+            w=p2w,
+            h=p2h,
             title="Sentences_per_second (avg)",
             cases=cases,
             value_key="sps_avg",
@@ -159,6 +214,18 @@ def main():
         default="micado vs MeCab benchmark (vibrato style)",
         help="chart title",
     )
+    parser.add_argument(
+        "--layout",
+        choices=["auto", "horizontal", "vertical"],
+        default="auto",
+        help="chart layout (default: auto)",
+    )
+    parser.add_argument(
+        "--max-width",
+        type=int,
+        default=0,
+        help="limit output width in pixels, 0 disables resize (default: 0)",
+    )
     args = parser.parse_args()
 
     text = Path(args.input).read_text(encoding="utf-8")
@@ -166,7 +233,7 @@ def main():
     if len(cases) == 0:
         raise SystemExit("no benchmark cases found in input")
 
-    svg = render_svg(cases, args.title)
+    svg = render_svg(cases, args.title, args.layout, args.max_width)
     out = Path(args.output)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(svg, encoding="utf-8")

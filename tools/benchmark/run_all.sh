@@ -9,6 +9,8 @@ RUNS=10
 TRIALS=10
 COPIES=2000
 WITH_VIBRATO=1
+PNG_MAX_WIDTH=960
+CHART_LAYOUT="auto"
 DATE_TAG="$(date +%F)"
 
 OUT_DIR="${ROOT_DIR}/bench/benchmark"
@@ -21,7 +23,7 @@ usage() {
   cat <<'EOF'
 Usage: tools/benchmark/run_all.sh [options]
 
-Runs benchmark for micado + MeCab (+ Vibrato) and renders an SVG chart.
+Runs benchmark for micado + MeCab (+ Vibrato) and renders SVG + PNG charts.
 
 Options:
   -i, --input <file>       Input corpus file (default: bench/corpus/aozora_openings.txt)
@@ -30,6 +32,8 @@ Options:
       --runs <n>           RUNS for micado/MeCab benchmark (default: 10)
       --trials <n>         TRIALS for micado/MeCab benchmark (default: 10)
   -c, --copies <n>         Duplicate input corpus N times (default: 2000)
+      --chart-layout <m>   Chart layout: auto|horizontal|vertical (default: auto)
+      --png-max-width <n>  Max PNG/SVG width in px, 0 disables resize (default: 960)
       --date-tag <tag>     Output suffix tag (default: YYYY-MM-DD)
       --no-vibrato         Skip Vibrato benchmark
   -h, --help               Show help
@@ -42,6 +46,35 @@ parse_int() {
     return 1
   fi
   printf '%s\n' "$value"
+}
+
+parse_non_negative_int() {
+  local value="$1"
+  if [[ ! "$value" =~ ^[0-9]+$ ]]; then
+    return 1
+  fi
+  printf '%s\n' "$value"
+}
+
+convert_svg_to_png() {
+  local src_svg="$1"
+  local dst_png="$2"
+
+  if command -v rsvg-convert >/dev/null 2>&1; then
+    rsvg-convert "$src_svg" -o "$dst_png"
+    return 0
+  fi
+  if command -v magick >/dev/null 2>&1; then
+    magick "$src_svg" "$dst_png"
+    return 0
+  fi
+  if command -v convert >/dev/null 2>&1; then
+    convert "$src_svg" "$dst_png"
+    return 0
+  fi
+
+  echo "error: no SVG->PNG converter found (need rsvg-convert or ImageMagick)." >&2
+  exit 1
 }
 
 auto_detect_dicdir() {
@@ -98,6 +131,21 @@ while [[ $# -gt 0 ]]; do
       }
       shift 2
       ;;
+    --chart-layout)
+      CHART_LAYOUT="$2"
+      if [[ "$CHART_LAYOUT" != "auto" && "$CHART_LAYOUT" != "horizontal" && "$CHART_LAYOUT" != "vertical" ]]; then
+        echo "error: --chart-layout must be one of: auto, horizontal, vertical" >&2
+        exit 1
+      fi
+      shift 2
+      ;;
+    --png-max-width)
+      PNG_MAX_WIDTH="$(parse_non_negative_int "$2")" || {
+        echo "error: --png-max-width must be a non-negative integer" >&2
+        exit 1
+      }
+      shift 2
+      ;;
     --date-tag)
       DATE_TAG="$2"
       shift 2
@@ -150,8 +198,10 @@ fi
 mkdir -p "$OUT_DIR" "$VIBRATO_CACHE_DIR"
 OUT_TXT="${OUT_DIR}/quick_compare_${DATE_TAG}.txt"
 OUT_SVG="${OUT_DIR}/quick_compare_${DATE_TAG}.svg"
+OUT_PNG="${OUT_DIR}/quick_compare_${DATE_TAG}.png"
 LATEST_TXT="${OUT_DIR}/quick_compare_latest.txt"
 LATEST_SVG="${OUT_DIR}/quick_compare_latest.svg"
+LATEST_PNG="${OUT_DIR}/quick_compare_latest.png"
 README_FILE="${ROOT_DIR}/README.mbt.md"
 
 echo "[run_all] running micado + mecab benchmark..."
@@ -282,10 +332,14 @@ echo "[run_all] rendering chart..."
 python3 "${ROOT_DIR}/tools/benchmark/render_compare_chart.py" \
   --input "$OUT_TXT" \
   --output "$OUT_SVG" \
+  --layout "$CHART_LAYOUT" \
+  --max-width "$PNG_MAX_WIDTH" \
   --title "micado vs MeCab vs Vibrato benchmark (${DATE_TAG})"
+convert_svg_to_png "$OUT_SVG" "$OUT_PNG"
 
 cp "$OUT_TXT" "$LATEST_TXT"
 cp "$OUT_SVG" "$LATEST_SVG"
+cp "$OUT_PNG" "$LATEST_PNG"
 python3 "${ROOT_DIR}/tools/benchmark/update_readme_benchmark.py" \
   --readme "$README_FILE" \
   --benchmark-text "$LATEST_TXT"
@@ -293,6 +347,8 @@ python3 "${ROOT_DIR}/tools/benchmark/update_readme_benchmark.py" \
 echo "[run_all] done"
 echo "  benchmark text: $OUT_TXT"
 echo "  benchmark svg : $OUT_SVG"
+echo "  benchmark png : $OUT_PNG"
 echo "  latest text   : $LATEST_TXT"
 echo "  latest svg    : $LATEST_SVG"
+echo "  latest png    : $LATEST_PNG"
 echo "  readme        : $README_FILE"
