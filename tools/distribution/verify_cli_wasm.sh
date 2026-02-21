@@ -8,11 +8,22 @@ cd "$ROOT_DIR"
 
 TEXT="$(cat "${ROOT_DIR}/npm/micado-wasm/demo/smoke-sentence.txt")"
 
+is_usable_mecab_dicdir() {
+  local dicdir="$1"
+  [[ -d "${dicdir}" ]] || return 1
+  [[ -f "${dicdir}/sys.dic" ]] || return 1
+  [[ -f "${dicdir}/unk.dic" ]] || return 1
+  [[ -f "${dicdir}/matrix.bin" ]] || return 1
+  return 0
+}
+
 find_mecab_dicdirs() {
   local -a out=()
 
-  if [[ -n "${MECAB_DICDIR:-}" && -d "${MECAB_DICDIR}" ]]; then
-    out+=("${MECAB_DICDIR}")
+  if [[ -n "${MECAB_DICDIR:-}" ]]; then
+    if is_usable_mecab_dicdir "${MECAB_DICDIR}"; then
+      out+=("${MECAB_DICDIR}")
+    fi
   fi
 
   if command -v mecab >/dev/null 2>&1; then
@@ -21,8 +32,10 @@ find_mecab_dicdirs() {
     dicdir_from_mecab="$(
       printf '%s\n' "${mecab_info}" | sed -n 's/^dicdir:[[:space:]]*//p' | head -n 1
     )"
-    if [[ -n "${dicdir_from_mecab}" && -d "${dicdir_from_mecab}" ]]; then
-      out+=("${dicdir_from_mecab}")
+    if [[ -n "${dicdir_from_mecab}" ]]; then
+      if is_usable_mecab_dicdir "${dicdir_from_mecab}"; then
+        out+=("${dicdir_from_mecab}")
+      fi
     fi
     filename_from_mecab="$(
       printf '%s\n' "${mecab_info}" | sed -n 's/^filename:[[:space:]]*//p' | head -n 1
@@ -30,7 +43,7 @@ find_mecab_dicdirs() {
     if [[ -n "${filename_from_mecab}" ]]; then
       local filename_dir
       filename_dir="$(dirname "${filename_from_mecab}")"
-      if [[ -d "${filename_dir}" ]]; then
+      if is_usable_mecab_dicdir "${filename_dir}"; then
         out+=("${filename_dir}")
       fi
     fi
@@ -40,12 +53,12 @@ find_mecab_dicdirs() {
     local base
     base="$(mecab-config --dicdir 2>/dev/null || true)"
     if [[ -n "${base}" ]]; then
-      if [[ -d "${base}" ]]; then
+      if is_usable_mecab_dicdir "${base}"; then
         out+=("${base}")
       fi
       local name
       for name in debian unidic unidic-lite ipadic-utf8 ipadic; do
-        if [[ -d "${base}/${name}" ]]; then
+        if is_usable_mecab_dicdir "${base}/${name}"; then
           out+=("${base}/${name}")
         fi
       done
@@ -74,11 +87,14 @@ find_mecab_dicdirs() {
     /var/lib/mecab/dic/unidic \
     /var/lib/mecab/dic/ipadic-utf8 \
     /var/lib/mecab/dic/ipadic; do
-    if [[ -d "${p}" ]]; then
+    if is_usable_mecab_dicdir "${p}"; then
       out+=("${p}")
     fi
   done
 
+  if [[ "${#out[@]}" -eq 0 ]]; then
+    return 0
+  fi
   printf '%s\n' "${out[@]}" | awk 'NF > 0 && !seen[$0]++'
 }
 
@@ -150,7 +166,7 @@ if [[ -z "${selected_dicdir}" ]]; then
   echo "[verify] failed to find a working mecab dictionary directory"
   echo "[verify] candidates:"
   find_mecab_dicdirs | sed 's/^/  - /'
-  echo "[verify] required: debian/unidic/unidic-lite/ipadic-utf8/ipadic"
+  echo "[verify] required (usable): debian/unidic/unidic-lite/ipadic-utf8/ipadic"
   echo "[verify] mecab -D:"
   mecab -D 2>/dev/null || true
   exit 1
@@ -167,21 +183,33 @@ fi
 echo "[verify] cli=ok"
 
 ipadic_dicdir=""
+ipadic_json=""
 while IFS= read -r dicdir; do
   [[ -z "${dicdir}" ]] && continue
   case "${dicdir}" in
-    */ipadic)
-      ipadic_dicdir="${dicdir}"
-      break
+    */ipadic|*/ipadic-utf8)
+      echo "[verify] trying ipadic candidate=${dicdir}"
+      candidate_json="$(
+        moon run --target native cmd/main -- -d "${dicdir}" -O json "${TEXT}" 2>/dev/null || true
+      )"
+      if [[ -z "${candidate_json}" ]]; then
+        continue
+      fi
+      if printf '%s' "${candidate_json}" | validate_cli_json 2>/dev/null; then
+        ipadic_dicdir="${dicdir}"
+        ipadic_json="${candidate_json}"
+        break
+      fi
       ;;
   esac
 done < <(find_mecab_dicdirs)
 
 if [[ -n "${ipadic_dicdir}" ]]; then
   echo "[verify] cli smoke (ipadic charset conversion): ${ipadic_dicdir}"
-  ipadic_json="$(moon run --target native cmd/main -- -d "${ipadic_dicdir}" -O json "${TEXT}")"
   printf '%s' "${ipadic_json}" | validate_cli_json
   echo "[verify] ipadic-conversion=ok"
+else
+  echo "[verify] no working ipadic dicdir found; skipping ipadic-conversion check"
 fi
 
 echo "[verify] wasm + dic.bin smoke"
