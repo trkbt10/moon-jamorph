@@ -20,7 +20,14 @@ fi
 
 mkdir -p "$WASM_DST_DIR"
 
-moon build -C "$ROOT_DIR" --target wasm "$PKG_DIR"
+if moon build --help | grep -q -- '--manifest-path'; then
+  moon build \
+    --manifest-path "$ROOT_DIR/moon.mod.json" \
+    --target wasm \
+    "$PKG_DIR"
+else
+  moon build -C "$ROOT_DIR" --target wasm "$PKG_DIR"
+fi
 cp "$WASM_SRC" "$WASM_DST"
 
 args=(
