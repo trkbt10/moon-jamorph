@@ -7,6 +7,9 @@ on:
       - main
     paths:
       - ".github/workflows/pages-demo.yml"
+      - "moon.mod.json"
+      - "cmd/wasm_api/**"
+      - "src/**"
       - "npm/micado-wasm/**"
       - "tools/distribution/build_wasm_npm.sh"
       - "tools/dict-compiler/scripts/build_web_dic_artifacts.mjs"
@@ -30,10 +33,28 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
+    env:
+      MOONBIT_VERSION: "latest"
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s -- "$MOONBIT_VERSION"
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+          "$HOME/.moon/bin/moon" version --all
+
+      - name: Build Web Wasm Artifacts
+        run: |
+          moon update
+          tools/distribution/build_wasm_npm.sh
 
       - name: Prepare site directory
         run: |
