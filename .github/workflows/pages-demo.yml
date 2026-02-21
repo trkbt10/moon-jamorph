@@ -65,7 +65,7 @@ jobs:
           rm -rf _site
           (
             cd npm/micado-wasm
-            npx vite build --outDir ../../_site --emptyOutDir
+            npx vite build --base ./ --outDir ../../_site --emptyOutDir
           )
           touch _site/.nojekyll
 
