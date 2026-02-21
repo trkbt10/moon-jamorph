@@ -9,6 +9,8 @@ on:
       - ".github/workflows/pages-demo.yml"
       - "npm/micado-wasm/**"
       - "tools/distribution/build_wasm_npm.sh"
+      - "tools/dict-compiler/scripts/build_web_dic_artifacts.mjs"
+      - "tools/dict-compiler/scripts/web_dic_build_core.mjs"
       - "tools/dict-compiler/scripts/build_web_dic_bin.mjs"
       - "tools/dict-compiler/scripts/build_web_small_tsv.sh"
       - "tools/dict-compiler/scripts/compress_dic_bin_deflate.mjs"
