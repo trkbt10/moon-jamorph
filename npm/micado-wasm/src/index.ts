@@ -1,57 +1,57 @@
-import { loadDicBin } from "./dic-bin.mjs";
+import { loadDicBin } from "./dic-bin.js";
+import { loadBinary } from "./platform/loader.js";
+import type {
+  BinarySource,
+  CompactToken,
+  DetailedToken,
+  DictionaryProfile,
+  DictionaryStats,
+  MicadoWasm,
+  MicadoWasmExports,
+  MicadoWasmOptions,
+  Tokenizer,
+  TokenizerOptions,
+} from "./types.js";
+import { DICTIONARY_PROFILES } from "./types.js";
 
-const DEFAULT_WASM_URL = new URL("./dist/micado_wasm.wasm", import.meta.url);
-const DICTIONARY_PROFILES = ["tiny", "mini", "medium", "full"];
+const DEFAULT_WASM_URL = new URL("../dist/micado_wasm.wasm", import.meta.url);
 
-async function loadWasmBinary(source) {
-  if (source instanceof Uint8Array) {
-    return source;
-  }
-  if (source instanceof ArrayBuffer) {
-    return new Uint8Array(source);
-  }
-
-  const url = source instanceof URL ? source : new URL(source ?? DEFAULT_WASM_URL, import.meta.url);
-  if (url.protocol === "file:") {
-    const fs = await import("node:fs/promises");
-    const bytes = await fs.readFile(url);
-    return new Uint8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  }
-
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch wasm: ${response.status} ${response.statusText}`);
-  }
-  return new Uint8Array(await response.arrayBuffer());
+async function loadWasmBinary(source?: BinarySource): Promise<Uint8Array> {
+  return loadBinary(source ?? DEFAULT_WASM_URL);
 }
 
-function normalizeProfile(profile) {
+function normalizeProfile(profile?: string | DictionaryProfile): DictionaryProfile {
   const value = String(profile ?? "full").toLowerCase();
-  if (!DICTIONARY_PROFILES.includes(value)) {
+  if (!DICTIONARY_PROFILES.includes(value as DictionaryProfile)) {
     throw new Error(
-      `unknown dictionary profile: ${profile} (expected ${DICTIONARY_PROFILES.join("|")})`,
+      `unknown dictionary profile: ${profile} (expected ${DICTIONARY_PROFILES.join("|")})`
     );
   }
-  return value;
+  return value as DictionaryProfile;
 }
 
-function defaultDicURL(profile, compressed) {
+function defaultDicURL(profile: DictionaryProfile, compressed: boolean): URL {
   const ext = compressed ? ".dic.bin.deflate" : ".dic.bin";
-  return new URL(`./dist/${profile}${ext}`, import.meta.url);
+  return new URL(`../dist/${profile}${ext}`, import.meta.url);
 }
 
-function posFromDetail(posDetail) {
+function posFromDetail(posDetail: string): string {
   const cols = posDetail.split(",");
   const c0 = cols[0] || "未知語";
   const c1 = cols[1] || "*";
   return `${c0},${c1}`;
 }
 
-function parseTokensFromTSV(tsv, detailed) {
+function parseTokensFromTSV(tsv: string, detailed: true): DetailedToken[];
+function parseTokensFromTSV(tsv: string, detailed: false): CompactToken[];
+function parseTokensFromTSV(
+  tsv: string,
+  detailed: boolean
+): CompactToken[] | DetailedToken[] {
   if (!tsv) {
     return [];
   }
-  const tokens = [];
+  const tokens: (CompactToken | DetailedToken)[] = [];
   const lines = tsv.split("\n");
   for (const line of lines) {
     if (!line) {
@@ -64,13 +64,13 @@ function parseTokensFromTSV(tsv, detailed) {
       continue;
     }
     const hasFeature = parts.length >= 5;
-    const startPos = Number.parseInt(parts[hasFeature ? 3 : 2], 10);
-    const endPos = Number.parseInt(parts[hasFeature ? 4 : 3], 10);
+    const startPos = Number.parseInt(parts[hasFeature ? 3 : 2] ?? "", 10);
+    const endPos = Number.parseInt(parts[hasFeature ? 4 : 3] ?? "", 10);
     if (!Number.isFinite(startPos) || !Number.isFinite(endPos)) {
       continue;
     }
     if (detailed) {
-      const mecabFeature = hasFeature ? parts[2] : posDetail;
+      const mecabFeature = hasFeature ? (parts[2] ?? posDetail) : posDetail;
       tokens.push({
         surface,
         pos: posFromDetail(posDetail),
@@ -91,19 +91,28 @@ function parseTokensFromTSV(tsv, detailed) {
   return tokens;
 }
 
-export function parseTokenTSV(tsv) {
+export function parseTokenTSV(tsv: string): CompactToken[] {
   return parseTokensFromTSV(tsv, false);
 }
 
-function parseDetailedTokenTSV(tsv) {
+function parseDetailedTokenTSV(tsv: string): DetailedToken[] {
   return parseTokensFromTSV(tsv, true);
 }
 
-function createWasmBridge(exportsObject) {
+interface WasmBridge {
+  runTokenize(fnName: "tokenize_nano_tsv", text: string): string;
+  loadDictionary(bytes: Uint8Array): {
+    entryCount: number;
+    maxSurfaceLength: number;
+    connectionIdCount: number;
+  };
+}
+
+function createWasmBridge(exportsObject: MicadoWasmExports): WasmBridge {
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
 
-  function decodeOutput(outputLen) {
+  function decodeOutput(outputLen: number): string {
     const bytes = new Uint8Array(outputLen);
     for (let i = 0; i < outputLen; i += 1) {
       bytes[i] = exportsObject.output_byte_at(i);
@@ -111,21 +120,29 @@ function createWasmBridge(exportsObject) {
     return decoder.decode(bytes);
   }
 
-  function writeBytesByPush(resetFn, pushFn, bytes) {
+  function writeBytesByPush(
+    resetFn: "reset_input" | "reset_dic_input",
+    pushFn: "push_input_byte" | "push_dic_input_byte",
+    bytes: Uint8Array
+  ): void {
     exportsObject[resetFn]();
     for (const byte of bytes) {
       exportsObject[pushFn](byte);
     }
   }
 
-  function runTokenize(fnName, text) {
+  function runTokenize(fnName: "tokenize_nano_tsv", text: string): string {
     const input = encoder.encode(text);
     writeBytesByPush("reset_input", "push_input_byte", input);
     const outputLen = exportsObject[fnName]();
     return decodeOutput(outputLen);
   }
 
-  function loadDictionary(bytes) {
+  function loadDictionary(bytes: Uint8Array): {
+    entryCount: number;
+    maxSurfaceLength: number;
+    connectionIdCount: number;
+  } {
     writeBytesByPush("reset_dic_input", "push_dic_input_byte", bytes);
     const loaded = exportsObject.load_dic_bin();
     if (loaded < 0) {
@@ -144,15 +161,29 @@ function createWasmBridge(exportsObject) {
   };
 }
 
-async function createRuntimeTokenizer(options = {}) {
+interface RuntimeTokenizer {
+  profile: DictionaryProfile;
+  tokenizeTSV(text: string): string;
+  tokenizeCompact(text: string): CompactToken[];
+  tokenizeDetailed(text: string): DetailedToken[];
+  stats: DictionaryStats;
+  backend: "wasm";
+}
+
+async function createRuntimeTokenizer(
+  options: TokenizerOptions = {}
+): Promise<RuntimeTokenizer> {
   const profile = normalizeProfile(options.profile ?? "full");
   const compressed = options.compressed === undefined ? true : !!options.compressed;
   const dicURL = options.dicURL ?? defaultDicURL(profile, compressed);
 
-  const wasmBinary = await loadWasmBinary(options.wasmURL ?? DEFAULT_WASM_URL);
-  const instantiated = await WebAssembly.instantiate(wasmBinary, {});
-  const instance = "instance" in instantiated ? instantiated.instance : instantiated;
-  const bridge = createWasmBridge(instance.exports);
+  const wasmBinary = await loadWasmBinary(options.wasmURL);
+  const result = await WebAssembly.instantiate(wasmBinary, {});
+  const instance =
+    "instance" in result
+      ? (result as unknown as WebAssembly.WebAssemblyInstantiatedSource).instance
+      : (result as unknown as WebAssembly.Instance);
+  const bridge = createWasmBridge(instance.exports as unknown as MicadoWasmExports);
 
   const dicBytes = await loadDicBin(dicURL, {
     compressed: options.compressed,
@@ -161,13 +192,13 @@ async function createRuntimeTokenizer(options = {}) {
 
   return {
     profile,
-    tokenizeTSV(text) {
+    tokenizeTSV(text: string): string {
       return bridge.runTokenize("tokenize_nano_tsv", text);
     },
-    tokenizeCompact(text) {
+    tokenizeCompact(text: string): CompactToken[] {
       return parseTokenTSV(bridge.runTokenize("tokenize_nano_tsv", text));
     },
-    tokenizeDetailed(text) {
+    tokenizeDetailed(text: string): DetailedToken[] {
       return parseDetailedTokenTSV(bridge.runTokenize("tokenize_nano_tsv", text));
     },
     stats: {
@@ -180,23 +211,25 @@ async function createRuntimeTokenizer(options = {}) {
   };
 }
 
-export async function createTokenizer(options = {}) {
+export async function createTokenizer(
+  options: TokenizerOptions = {}
+): Promise<Tokenizer> {
   const tokenizer = await createRuntimeTokenizer(options);
   return {
     profile: tokenizer.profile,
     entries: [],
     stats: tokenizer.stats,
     backend: tokenizer.backend,
-    tokenize(text) {
+    tokenize(text: string): DetailedToken[] {
       return tokenizer.tokenizeDetailed(text);
     },
-    tokenizeTSV(text) {
+    tokenizeTSV(text: string): string {
       return tokenizer.tokenizeTSV(text);
     },
   };
 }
 
-function toCompactToken(token) {
+function toCompactToken(token: DetailedToken): CompactToken {
   return {
     surface: token.surface,
     pos_detail: token.pos_detail,
@@ -205,22 +238,31 @@ function toCompactToken(token) {
   };
 }
 
-function toCompactTSV(tokens) {
+function toCompactTSV(tokens: CompactToken[]): string {
   return tokens
-    .map((token) => `${token.surface}\t${token.pos_detail}\t${token.start_pos}\t${token.end_pos}`)
+    .map(
+      (token) =>
+        `${token.surface}\t${token.pos_detail}\t${token.start_pos}\t${token.end_pos}`
+    )
     .join("\n");
 }
 
-export async function createMicadoWasm(options = {}) {
+export async function createMicadoWasm(
+  options: MicadoWasmOptions = {}
+): Promise<MicadoWasm> {
   const sharedProfile = options.profile;
-  const nanoProfile = normalizeProfile(options.nanoProfile ?? sharedProfile ?? "tiny");
-  const miniProfile = normalizeProfile(options.miniProfile ?? sharedProfile ?? "mini");
+  const nanoProfile = normalizeProfile(
+    options.nanoProfile ?? sharedProfile ?? "tiny"
+  );
+  const miniProfile = normalizeProfile(
+    options.miniProfile ?? sharedProfile ?? "mini"
+  );
 
   const nanoKey = `${nanoProfile}|${String(options.nanoDicURL ?? options.dicURL ?? "")}|${String(options.compressed ?? true)}|${String(options.wasmURL ?? "")}`;
   const miniKey = `${miniProfile}|${String(options.miniDicURL ?? options.dicURL ?? "")}|${String(options.compressed ?? true)}|${String(options.wasmURL ?? "")}`;
 
-  let nanoTokenizer;
-  let miniTokenizer;
+  let nanoTokenizer: RuntimeTokenizer;
+  let miniTokenizer: RuntimeTokenizer;
   if (nanoKey === miniKey) {
     nanoTokenizer = await createRuntimeTokenizer({
       profile: nanoProfile,
@@ -247,16 +289,16 @@ export async function createMicadoWasm(options = {}) {
   }
 
   return {
-    tokenizeNanoTSV(text) {
+    tokenizeNanoTSV(text: string): string {
       return toCompactTSV(nanoTokenizer.tokenizeCompact(text));
     },
-    tokenizeMiniTSV(text) {
+    tokenizeMiniTSV(text: string): string {
       return toCompactTSV(miniTokenizer.tokenizeCompact(text));
     },
-    tokenizeNano(text) {
+    tokenizeNano(text: string): CompactToken[] {
       return nanoTokenizer.tokenizeDetailed(text).map(toCompactToken);
     },
-    tokenizeMini(text) {
+    tokenizeMini(text: string): CompactToken[] {
       return miniTokenizer.tokenizeDetailed(text).map(toCompactToken);
     },
     backend: "wasm",
@@ -265,7 +307,9 @@ export async function createMicadoWasm(options = {}) {
   };
 }
 
-export async function createWebSmallTokenizer(options = {}) {
+export async function createWebSmallTokenizer(
+  options: TokenizerOptions = {}
+): Promise<Tokenizer> {
   return createTokenizer({
     profile: options.profile ?? "full",
     compressed: options.compressed,
@@ -275,3 +319,18 @@ export async function createWebSmallTokenizer(options = {}) {
 }
 
 export { DICTIONARY_PROFILES, loadDicBin };
+export type {
+  BinarySource,
+  CompactToken,
+  DetailedToken,
+  DictionaryProfile,
+  DictionaryStats,
+  LoadDicBinOptions,
+  MicadoWasm,
+  MicadoWasmExports,
+  MicadoWasmOptions,
+  Token,
+  Tokenizer,
+  TokenizerOptions,
+} from "./types.js";
+export { AOZORA_EXAMPLES, type AozoraExample } from "./examples.js";

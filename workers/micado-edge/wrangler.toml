@@ -1,5 +1,5 @@
 name = "micado-edge"
-main = "src/worker.mjs"
+main = "src/worker.ts"
 compatibility_date = "2026-02-21"
 minify = true
 

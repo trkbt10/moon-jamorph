@@ -1,6 +1,16 @@
-import { toCompactToken, tokensToTSV } from "../tokenize.mjs";
+import { toCompactToken, tokensToTSV } from "../tokenize.js";
+import type { DetailedToken, TokenFormat } from "../../types.js";
 
-export function normalizeBlockPayload(blockTokens, format) {
+export interface BlockPayload {
+  tokenCount: number;
+  tokens?: unknown[];
+  tsv?: string;
+}
+
+export function normalizeBlockPayload(
+  blockTokens: DetailedToken[],
+  format: TokenFormat
+): BlockPayload {
   if (format === "tsv") {
     return { tsv: tokensToTSV(blockTokens), tokenCount: blockTokens.length };
   }

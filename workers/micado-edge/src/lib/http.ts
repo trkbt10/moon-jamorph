@@ -1,4 +1,9 @@
-export function jsonResponse(body, init = {}) {
+export interface ResponseInit {
+  status?: number;
+  headers?: Record<string, string>;
+}
+
+export function jsonResponse(body: unknown, init: ResponseInit = {}): Response {
   return new Response(JSON.stringify(body), {
     status: init.status ?? 200,
     headers: {
@@ -8,7 +13,7 @@ export function jsonResponse(body, init = {}) {
   });
 }
 
-export function htmlResponse(body, init = {}) {
+export function htmlResponse(body: string, init: ResponseInit = {}): Response {
   return new Response(body, {
     status: init.status ?? 200,
     headers: {
@@ -18,7 +23,10 @@ export function htmlResponse(body, init = {}) {
   });
 }
 
-export function parseBoolean(raw, fallback) {
+export function parseBoolean(
+  raw: string | null | undefined,
+  fallback: boolean
+): boolean {
   if (raw === undefined || raw === null || raw === "") {
     return fallback;
   }
@@ -32,7 +40,12 @@ export function parseBoolean(raw, fallback) {
   return fallback;
 }
 
-export function normalizeInt(raw, fallback, min, max) {
+export function normalizeInt(
+  raw: string | number | null | undefined,
+  fallback: number,
+  min: number,
+  max: number
+): number {
   const parsed = Number.parseInt(String(raw ?? fallback), 10);
   const safe = Number.isFinite(parsed) ? parsed : fallback;
   return Math.max(min, Math.min(max, safe));

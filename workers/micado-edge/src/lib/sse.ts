@@ -1,14 +1,19 @@
+import type { ResponseInit } from "./http.js";
+import type { SSEWriter } from "../types.js";
+
 const encoder = new TextEncoder();
 
-export function encodeSSEEvent(event, data) {
+export function encodeSSEEvent(event: string, data: unknown): Uint8Array {
   return encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
 }
 
-export function createSSEWriter(writer) {
+export function createSSEWriter(
+  writer: WritableStreamDefaultWriter<Uint8Array>
+): SSEWriter {
   let writerClosed = false;
 
   return {
-    async send(event, payload) {
+    async send(event: string, payload: unknown): Promise<boolean> {
       if (writerClosed) {
         return false;
       }
@@ -21,19 +26,24 @@ export function createSSEWriter(writer) {
       }
     },
 
-    async close() {
+    async close(): Promise<void> {
       if (writerClosed) {
         return;
       }
       try {
         await writer.close();
-      } catch {}
+      } catch {
+        // Ignore close errors
+      }
       writerClosed = true;
     },
   };
 }
 
-export function createSSEResponse(readable, init = {}) {
+export function createSSEResponse(
+  readable: ReadableStream<Uint8Array>,
+  init: ResponseInit = {}
+): Response {
   return new Response(readable, {
     status: init.status ?? 200,
     headers: {

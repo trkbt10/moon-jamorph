@@ -1,3 +1,5 @@
+import type { BlockReason, DetailedToken, QuoteState, ScanResult } from "../../types.js";
+
 const TERMINATOR_CHARS = new Set(["。", "！", "？", ".", "!", "?"]);
 const OPEN_TO_CLOSE = new Map([
   ["「", "」"],
@@ -12,13 +14,20 @@ const OPEN_TO_CLOSE = new Map([
   ["（", "）"],
   ["[", "]"],
   ["{", "}"],
-  ["“", "”"],
-  ["‘", "’"],
+  ["\u201C", "\u201D"],
+  ["\u2018", "\u2019"],
 ]);
 const CLOSE_CHARS = new Set(Array.from(OPEN_TO_CLOSE.values()));
-const TRAILING_BOUNDARY_CHARS = new Set([...CLOSE_CHARS, "\"", "'", "」", "』", "》"]);
+const TRAILING_BOUNDARY_CHARS = new Set([
+  ...CLOSE_CHARS,
+  '"',
+  "'",
+  "」",
+  "』",
+  "》",
+]);
 
-export function createQuoteState() {
+export function createQuoteState(): QuoteState {
   return {
     stack: [],
     inSingleQuote: false,
@@ -26,12 +35,12 @@ export function createQuoteState() {
   };
 }
 
-function isOutsideQuotes(state) {
+function isOutsideQuotes(state: QuoteState): boolean {
   return state.stack.length === 0 && !state.inSingleQuote && !state.inDoubleQuote;
 }
 
-function applyQuoteChar(state, ch) {
-  if (ch === "\"") {
+function applyQuoteChar(state: QuoteState, ch: string): void {
+  if (ch === '"') {
     state.inDoubleQuote = !state.inDoubleQuote;
     return;
   }
@@ -55,7 +64,12 @@ function applyQuoteChar(state, ch) {
   }
 }
 
-function extendBoundary(text, boundary, safeEnd, quoteState) {
+function extendBoundary(
+  text: string,
+  boundary: number,
+  safeEnd: number,
+  quoteState: QuoteState
+): number {
   let cursor = boundary;
   while (cursor < safeEnd) {
     const ch = text[cursor];
@@ -72,7 +86,11 @@ function extendBoundary(text, boundary, safeEnd, quoteState) {
   return cursor;
 }
 
-function findParagraphBoundary(text, start, safeEnd) {
+function findParagraphBoundary(
+  text: string,
+  start: number,
+  safeEnd: number
+): number | null {
   let cursor = start;
   let newlineCount = 0;
   let sawBreakChar = false;
@@ -106,7 +124,17 @@ function findParagraphBoundary(text, start, safeEnd) {
   return cursor;
 }
 
-function scanBoundaryAtChar(text, charPos, safeEnd, quoteState) {
+interface BoundaryResult {
+  boundary: number;
+  reason: BlockReason;
+}
+
+function scanBoundaryAtChar(
+  text: string,
+  charPos: number,
+  safeEnd: number,
+  quoteState: QuoteState
+): BoundaryResult | null {
   const ch = text[charPos];
   if (!ch) {
     return null;
@@ -127,12 +155,28 @@ function scanBoundaryAtChar(text, charPos, safeEnd, quoteState) {
   return null;
 }
 
-function scanRawRange(text, from, to, safeEnd, quoteState) {
+interface RawRangeResult {
+  boundary: number | null;
+  scannedTo: number;
+  reason: BlockReason | null;
+}
+
+function scanRawRange(
+  text: string,
+  from: number,
+  to: number,
+  safeEnd: number,
+  quoteState: QuoteState
+): RawRangeResult {
   let cursor = from;
   while (cursor < to) {
     const found = scanBoundaryAtChar(text, cursor, safeEnd, quoteState);
     if (found) {
-      return { boundary: found.boundary, scannedTo: found.boundary, reason: found.reason };
+      return {
+        boundary: found.boundary,
+        scannedTo: found.boundary,
+        reason: found.reason,
+      };
     }
     const ch = text[cursor];
     if (!ch) {
@@ -143,7 +187,13 @@ function scanRawRange(text, from, to, safeEnd, quoteState) {
   return { boundary: null, scannedTo: cursor, reason: null };
 }
 
-export function scanForBoundary(pendingTokens, scanCursor, safeEnd, quoteState, text) {
+export function scanForBoundary(
+  pendingTokens: DetailedToken[],
+  scanCursor: number,
+  safeEnd: number,
+  quoteState: QuoteState,
+  text: string
+): ScanResult {
   if (scanCursor >= safeEnd) {
     return { boundary: null, scannedTo: safeEnd, reason: null };
   }
@@ -158,7 +208,13 @@ export function scanForBoundary(pendingTokens, scanCursor, safeEnd, quoteState, 
     }
 
     if (cursor < token.start_pos) {
-      const gapResult = scanRawRange(text, cursor, Math.min(token.start_pos, safeEnd), safeEnd, quoteState);
+      const gapResult = scanRawRange(
+        text,
+        cursor,
+        Math.min(token.start_pos, safeEnd),
+        safeEnd,
+        quoteState
+      );
       if (gapResult.boundary) {
         return gapResult;
       }
@@ -184,7 +240,11 @@ export function scanForBoundary(pendingTokens, scanCursor, safeEnd, quoteState, 
       }
       const found = scanBoundaryAtChar(text, charPos, safeEnd, quoteState);
       if (found) {
-        return { boundary: found.boundary, scannedTo: found.boundary, reason: found.reason };
+        return {
+          boundary: found.boundary,
+          scannedTo: found.boundary,
+          reason: found.reason,
+        };
       }
       cursor = Math.max(cursor, charEnd);
       charPos = charEnd;

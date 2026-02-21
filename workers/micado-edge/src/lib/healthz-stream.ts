@@ -1,11 +1,31 @@
-import { getRuntimeStatus, getRuntimeSync, warmRuntimeInBackground } from "./runtime.mjs";
-import { createSSEResponse, createSSEWriter } from "./sse.mjs";
+import type { Runtime, RuntimeStatus } from "../types.js";
+import {
+  getRuntimeStatus,
+  getRuntimeSync,
+  warmRuntimeInBackground,
+} from "./runtime.js";
+import { createSSEResponse, createSSEWriter } from "./sse.js";
 
-function sleep(ms) {
+function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function buildStatusPayload(index) {
+interface StatusPayload extends RuntimeStatus {
+  index: number;
+  ok: boolean;
+  runtime: string;
+  profile?: string;
+  sourceMode?: string;
+  entryLimit?: number;
+  targetDeflateBytes?: number;
+  dictionaryCompressedBytes?: number;
+  dictionaryBytes?: number;
+  entryCount?: number;
+  maxSurfaceLength?: number;
+  connectionIdCount?: number;
+}
+
+function buildStatusPayload(index: number): StatusPayload {
   const runtime = getRuntimeSync();
   const status = getRuntimeStatus();
   return {
@@ -17,8 +37,18 @@ function buildStatusPayload(index) {
   };
 }
 
-export function createHealthzWaitSSE({ ctx, intervalMs, timeoutMs }) {
-  const { readable, writable } = new TransformStream();
+export interface HealthzWaitSSEOptions {
+  ctx?: ExecutionContext;
+  intervalMs: number;
+  timeoutMs: number;
+}
+
+export function createHealthzWaitSSE({
+  ctx,
+  intervalMs,
+  timeoutMs,
+}: HealthzWaitSSEOptions): Response {
+  const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>();
   const writer = writable.getWriter();
   const sseWriter = createSSEWriter(writer);
 
@@ -68,10 +98,9 @@ export function createHealthzWaitSSE({ ctx, intervalMs, timeoutMs }) {
       await sleep(intervalMs);
     }
   })()
-    .catch(async (error) => {
-      await sseWriter.send("error", {
-        message: String(error?.message ?? error),
-      });
+    .catch(async (error: unknown) => {
+      const message = error instanceof Error ? error.message : String(error);
+      await sseWriter.send("error", { message });
     })
     .finally(() => sseWriter.close());
 

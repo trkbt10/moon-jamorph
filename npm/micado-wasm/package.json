@@ -4,26 +4,34 @@
   "description": "micado tokenizer: unified dic.bin runtime with profile-selectable dictionaries",
   "type": "module",
   "exports": {
-    ".": "./index.mjs",
-    "./dic-bin": "./dic-bin.mjs"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./dic-bin": {
+      "types": "./dist/dic-bin.d.ts",
+      "import": "./dist/dic-bin.js"
+    }
   },
+  "types": "./dist/index.d.ts",
   "files": [
-    "index.mjs",
-    "dic-bin.mjs",
-    "dist/micado_wasm.wasm",
-    "dist/*.dic.bin",
-    "dist/*.dic.bin.deflate",
-    "README.md",
-    "demo"
+    "dist",
+    "README.md"
   ],
   "scripts": {
+    "build": "tsc",
     "build:wasm": "../../tools/distribution/build_wasm_npm.sh",
-    "test:node": "node ./demo/node-smoke.mjs",
-    "test:dic": "node ./demo/node-dic-smoke.mjs",
-    "test:accuracy": "node ./demo/accuracy-cli.mjs",
-    "preview:demo": "vite demo --host --open"
+    "typecheck": "tsc --noEmit",
+    "test:smoke": "tsx ./demo/node-smoke.ts",
+    "test:dic": "tsx ./demo/node-dic-smoke.ts",
+    "test:accuracy": "tsx ./demo/accuracy-cli.ts",
+    "dev": "vite",
+    "preview:demo": "vite --host --open"
   },
   "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.7.0",
     "vite": "^6.0.0"
   },
   "keywords": [

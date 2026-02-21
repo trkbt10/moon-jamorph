@@ -1,15 +1,22 @@
-function posFromDetail(posDetail) {
+import type { CompactToken, DetailedToken, Token } from "../types.js";
+
+function posFromDetail(posDetail: string): string {
   const cols = posDetail.split(",");
   const c0 = cols[0] || "未知語";
   const c1 = cols[1] || "*";
   return `${c0},${c1}`;
 }
 
-export function parseTokensFromTSV(tsv, detailed) {
+export function parseTokensFromTSV(tsv: string, detailed: true): DetailedToken[];
+export function parseTokensFromTSV(tsv: string, detailed: false): CompactToken[];
+export function parseTokensFromTSV(
+  tsv: string,
+  detailed: boolean
+): CompactToken[] | DetailedToken[] {
   if (!tsv) {
     return [];
   }
-  const tokens = [];
+  const tokens: Token[] = [];
   const lines = tsv.split("\n");
   for (const line of lines) {
     if (!line) {
@@ -22,13 +29,13 @@ export function parseTokensFromTSV(tsv, detailed) {
       continue;
     }
     const hasFeature = parts.length >= 5;
-    const startPos = Number.parseInt(parts[hasFeature ? 3 : 2], 10);
-    const endPos = Number.parseInt(parts[hasFeature ? 4 : 3], 10);
+    const startPos = Number.parseInt(parts[hasFeature ? 3 : 2] ?? "", 10);
+    const endPos = Number.parseInt(parts[hasFeature ? 4 : 3] ?? "", 10);
     if (!Number.isFinite(startPos) || !Number.isFinite(endPos)) {
       continue;
     }
     if (detailed) {
-      const mecabFeature = hasFeature ? parts[2] : posDetail;
+      const mecabFeature = hasFeature ? (parts[2] ?? posDetail) : posDetail;
       tokens.push({
         surface,
         pos: posFromDetail(posDetail),
@@ -49,7 +56,7 @@ export function parseTokensFromTSV(tsv, detailed) {
   return tokens;
 }
 
-export function toCompactToken(token) {
+export function toCompactToken(token: Token): CompactToken {
   return {
     surface: token.surface,
     pos_detail: token.pos_detail,
@@ -58,11 +65,12 @@ export function toCompactToken(token) {
   };
 }
 
-export function tokensToTSV(tokens) {
+export function tokensToTSV(tokens: Token[]): string {
   return tokens
-    .map(
-      (token) =>
-        `${token.surface}\t${token.pos_detail}\t${token.mecab_feature ?? token.pos_detail}\t${token.start_pos}\t${token.end_pos}`,
-    )
+    .map((token) => {
+      const mecabFeature =
+        "mecab_feature" in token ? token.mecab_feature : token.pos_detail;
+      return `${token.surface}\t${token.pos_detail}\t${mecabFeature}\t${token.start_pos}\t${token.end_pos}`;
+    })
     .join("\n");
 }

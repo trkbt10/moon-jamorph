@@ -1,17 +1,26 @@
-import { htmlResponse, jsonResponse, normalizeInt, parseBoolean } from "./lib/http.mjs";
-import { createHealthzWaitSSE } from "./lib/healthz-stream.mjs";
+import type { Runtime, TokenFormat, StreamOptions } from "./types.js";
+import {
+  htmlResponse,
+  jsonResponse,
+  normalizeInt,
+  parseBoolean,
+} from "./lib/http.js";
+import { createHealthzWaitSSE } from "./lib/healthz-stream.js";
 import {
   ServiceUnavailableError,
   getRuntime,
   getRuntimeStatus,
   getRuntimeSync,
   warmRuntimeInBackground,
-} from "./lib/runtime.mjs";
-import { normalizeStreamOptions, createTokenizeStreamResponse } from "./lib/streaming.mjs";
-import { parseTokensFromTSV } from "./lib/tokenize.mjs";
+} from "./lib/runtime.js";
+import {
+  normalizeStreamOptions,
+  createTokenizeStreamResponse,
+} from "./lib/streaming.js";
+import { parseTokensFromTSV } from "./lib/tokenize.js";
 import { SSE_CHECK_UI } from "./ui/sse-check-ui.mjs";
 
-function normalizeFormat(format) {
+function normalizeFormat(format: string | null | undefined): TokenFormat {
   const value = String(format ?? "detailed").toLowerCase();
   if (value === "tsv" || value === "detailed" || value === "compact") {
     return value;
@@ -19,7 +28,12 @@ function normalizeFormat(format) {
   return "detailed";
 }
 
-async function readTokenizeInput(request) {
+interface TokenizeInput {
+  text: string;
+  format: TokenFormat;
+}
+
+async function readTokenizeInput(request: Request): Promise<TokenizeInput> {
   if (request.method === "GET") {
     const url = new URL(request.url);
     return {
@@ -32,7 +46,7 @@ async function readTokenizeInput(request) {
     if (!contentType.includes("application/json")) {
       throw new Error("POST /tokenize requires application/json");
     }
-    const body = await request.json();
+    const body = (await request.json()) as { text?: string; format?: string };
     return {
       text: String(body?.text ?? ""),
       format: normalizeFormat(body?.format ?? "detailed"),
@@ -41,18 +55,26 @@ async function readTokenizeInput(request) {
   throw new Error("Only GET/POST are supported for /tokenize");
 }
 
-async function readTokenizeStreamInput(request) {
+interface TokenizeStreamInput {
+  text: string;
+  format: TokenFormat;
+  options: StreamOptions;
+}
+
+async function readTokenizeStreamInput(
+  request: Request
+): Promise<TokenizeStreamInput> {
   if (request.method === "GET") {
     const url = new URL(request.url);
     return {
       text: url.searchParams.get("text") ?? "",
       format: normalizeFormat(url.searchParams.get("format") ?? "compact"),
       options: normalizeStreamOptions({
-        windowChars: url.searchParams.get("windowChars"),
-        overlapChars: url.searchParams.get("overlapChars"),
-        forceFlushChars: url.searchParams.get("forceFlushChars"),
-        notifyWindow: url.searchParams.get("notifyWindow"),
-        includeText: url.searchParams.get("includeText"),
+        windowChars: url.searchParams.get("windowChars") ?? undefined,
+        overlapChars: url.searchParams.get("overlapChars") ?? undefined,
+        forceFlushChars: url.searchParams.get("forceFlushChars") ?? undefined,
+        notifyWindow: url.searchParams.get("notifyWindow") ?? undefined,
+        includeText: url.searchParams.get("includeText") ?? undefined,
       }),
     };
   }
@@ -61,7 +83,15 @@ async function readTokenizeStreamInput(request) {
     if (!contentType.includes("application/json")) {
       throw new Error("POST /tokenize/stream requires application/json");
     }
-    const body = await request.json();
+    const body = (await request.json()) as {
+      text?: string;
+      format?: string;
+      windowChars?: string | number;
+      overlapChars?: string | number;
+      forceFlushChars?: string | number;
+      notifyWindow?: string | boolean;
+      includeText?: string | boolean;
+    };
     return {
       text: String(body?.text ?? ""),
       format: normalizeFormat(body?.format ?? "compact"),
@@ -71,13 +101,13 @@ async function readTokenizeStreamInput(request) {
   throw new Error("Only GET/POST are supported for /tokenize/stream");
 }
 
-async function handleTokenize(request) {
+async function handleTokenize(request: Request): Promise<Response> {
   const { text, format } = await readTokenizeInput(request);
   if (!text) {
     return jsonResponse({ error: "text is required" }, { status: 400 });
   }
 
-  let runtime;
+  let runtime: Runtime;
   try {
     runtime = await getRuntime();
   } catch (error) {
@@ -91,8 +121,10 @@ async function handleTokenize(request) {
       headers: { "content-type": "text/plain; charset=utf-8" },
     });
   }
-  const detailed = format === "detailed";
-  const tokens = parseTokensFromTSV(tsv, detailed);
+  const tokens =
+    format === "detailed"
+      ? parseTokensFromTSV(tsv, true)
+      : parseTokensFromTSV(tsv, false);
   return jsonResponse({
     profile: runtime.stats.profile,
     format,
@@ -101,13 +133,13 @@ async function handleTokenize(request) {
   });
 }
 
-async function handleTokenizeStream(request) {
+async function handleTokenizeStream(request: Request): Promise<Response> {
   const { text, format, options } = await readTokenizeStreamInput(request);
   if (!text) {
     return jsonResponse({ error: "text is required" }, { status: 400 });
   }
 
-  let runtime;
+  let runtime: Runtime;
   try {
     runtime = await getRuntime();
   } catch (error) {
@@ -122,18 +154,22 @@ async function handleTokenizeStream(request) {
   });
 }
 
-function serviceUnavailable(error) {
+function serviceUnavailable(error: ServiceUnavailableError): Response {
   return jsonResponse(
     {
       error: error.message,
-      cause: String(error.cause?.message ?? error.cause ?? ""),
+      cause: String(
+        error.cause instanceof Error
+          ? error.cause.message
+          : error.cause ?? ""
+      ),
       ...getRuntimeStatus(),
     },
-    { status: 503, headers: { "retry-after": "1" } },
+    { status: 503, headers: { "retry-after": "1" } }
   );
 }
 
-function warmRuntime(ctx) {
+function warmRuntime(ctx?: ExecutionContext): void {
   const warmPromise = warmRuntimeInBackground();
   if (warmPromise && typeof ctx?.waitUntil === "function") {
     ctx.waitUntil(warmPromise);
@@ -141,7 +177,11 @@ function warmRuntime(ctx) {
 }
 
 export default {
-  async fetch(request, _env, ctx) {
+  async fetch(
+    request: Request,
+    _env: unknown,
+    ctx: ExecutionContext
+  ): Promise<Response> {
     const url = new URL(request.url);
 
     if (url.pathname === "/healthz") {
@@ -150,8 +190,18 @@ export default {
         parseBoolean(url.searchParams.get("sse"), false) ||
         (request.headers.get("accept") ?? "").includes("text/event-stream");
       if (wait && wantsSSE) {
-        const intervalMs = normalizeInt(url.searchParams.get("intervalMs"), 250, 50, 5000);
-        const timeoutMs = normalizeInt(url.searchParams.get("timeoutMs"), 120000, 1000, 600000);
+        const intervalMs = normalizeInt(
+          url.searchParams.get("intervalMs"),
+          250,
+          50,
+          5000
+        );
+        const timeoutMs = normalizeInt(
+          url.searchParams.get("timeoutMs"),
+          120000,
+          1000,
+          600000
+        );
         return createHealthzWaitSSE({
           ctx,
           intervalMs,
@@ -167,15 +217,16 @@ export default {
             ...runtime.stats,
             ...getRuntimeStatus(),
           });
-        } catch (error) {
+        } catch (error: unknown) {
+          const message = error instanceof Error ? error.message : String(error);
           return jsonResponse(
             {
               ok: false,
               runtime: "micado-wasm",
-              error: String(error?.message ?? error),
+              error: message,
               ...getRuntimeStatus(),
             },
-            { status: 503 },
+            { status: 503 }
           );
         }
       }
@@ -200,7 +251,7 @@ export default {
           runtime: "micado-wasm",
           ...status,
         },
-        { status: statusCode },
+        { status: statusCode }
       );
     }
 
@@ -211,7 +262,8 @@ export default {
         if (error instanceof ServiceUnavailableError) {
           return serviceUnavailable(error);
         }
-        return jsonResponse({ error: String(error?.message ?? error) }, { status: 400 });
+        const message = error instanceof Error ? error.message : String(error);
+        return jsonResponse({ error: message }, { status: 400 });
       }
     }
 
@@ -222,7 +274,8 @@ export default {
         if (error instanceof ServiceUnavailableError) {
           return serviceUnavailable(error);
         }
-        return jsonResponse({ error: String(error?.message ?? error) }, { status: 400 });
+        const message = error instanceof Error ? error.message : String(error);
+        return jsonResponse({ error: message }, { status: 400 });
       }
     }
 
@@ -244,7 +297,7 @@ export default {
           "/_sse-check",
         ],
       },
-      { status: 200 },
+      { status: 200 }
     );
   },
 };

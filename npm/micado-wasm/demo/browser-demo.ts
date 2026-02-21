@@ -1,0 +1,106 @@
+import {
+  createTokenizer,
+  DICTIONARY_PROFILES,
+  AOZORA_EXAMPLES,
+} from "../src/index.js";
+import type { DetailedToken, DictionaryProfile, Tokenizer } from "../src/types.js";
+
+const statusEl = document.querySelector<HTMLElement>("#status")!;
+const inputEl = document.querySelector<HTMLTextAreaElement>("#input")!;
+const resultEl = document.querySelector<HTMLTableSectionElement>("#result")!;
+const analyzeBtn = document.querySelector<HTMLButtonElement>("#analyze")!;
+const exampleEl = document.querySelector<HTMLSelectElement>("#example")!;
+const profileEl = document.querySelector<HTMLSelectElement>("#profile")!;
+
+const tokenizerCache = new Map<DictionaryProfile, Tokenizer>();
+
+for (const name of DICTIONARY_PROFILES) {
+  const option = document.createElement("option");
+  option.value = name;
+  option.textContent = name;
+  if (name === "full") {
+    option.selected = true;
+  }
+  profileEl.append(option);
+}
+
+for (let i = 0; i < AOZORA_EXAMPLES.length; i += 1) {
+  const option = document.createElement("option");
+  option.value = String(i);
+  option.textContent = AOZORA_EXAMPLES[i]!.label;
+  exampleEl.append(option);
+}
+
+function pickRandomExampleIndex(): number {
+  return Math.floor(Math.random() * AOZORA_EXAMPLES.length);
+}
+
+function setExampleByIndex(index: number): void {
+  if (index < 0 || index >= AOZORA_EXAMPLES.length) {
+    return;
+  }
+  exampleEl.value = String(index);
+  inputEl.value = AOZORA_EXAMPLES[index]!.text;
+}
+
+function renderRows(tokens: DetailedToken[]): void {
+  const html = tokens
+    .map(
+      (t) =>
+        `<tr><td>${t.surface}</td><td>${t.pos_detail}</td><td>${t.start_pos}</td><td>${t.end_pos}</td></tr>`
+    )
+    .join("");
+  resultEl.innerHTML = html;
+}
+
+async function getTokenizer(profile: DictionaryProfile): Promise<Tokenizer> {
+  const cached = tokenizerCache.get(profile);
+  if (cached) {
+    return cached;
+  }
+  const tokenizer = await createTokenizer({ profile, compressed: true });
+  tokenizerCache.set(profile, tokenizer);
+  return tokenizer;
+}
+
+async function analyzeCurrentInput(): Promise<void> {
+  const profile = profileEl.value as DictionaryProfile;
+  statusEl.textContent = `Loading ${profile} (deflate)...`;
+  const tokenizer = await getTokenizer(profile);
+  const input = inputEl.value ?? "";
+  const tokens = tokenizer.tokenize(input);
+  renderRows(tokens);
+  statusEl.textContent = `${tokens.length} tokens / ${profile} (${tokenizer.stats.entryCount} entries)`;
+}
+
+analyzeBtn.addEventListener("click", () => {
+  analyzeCurrentInput().catch((err: unknown) => {
+    const message = err instanceof Error ? err.message : String(err);
+    statusEl.textContent = `Error: ${message}`;
+  });
+});
+
+exampleEl.addEventListener("change", () => {
+  const index = Number.parseInt(exampleEl.value, 10);
+  if (Number.isFinite(index)) {
+    setExampleByIndex(index);
+  }
+  analyzeCurrentInput().catch((err: unknown) => {
+    const message = err instanceof Error ? err.message : String(err);
+    statusEl.textContent = `Error: ${message}`;
+  });
+});
+
+profileEl.addEventListener("change", () => {
+  analyzeCurrentInput().catch((err: unknown) => {
+    const message = err instanceof Error ? err.message : String(err);
+    statusEl.textContent = `Error: ${message}`;
+  });
+});
+
+setExampleByIndex(pickRandomExampleIndex());
+
+analyzeCurrentInput().catch((err: unknown) => {
+  const message = err instanceof Error ? err.message : String(err);
+  statusEl.textContent = `Error: ${message}`;
+});

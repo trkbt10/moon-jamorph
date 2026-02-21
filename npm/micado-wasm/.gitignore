@@ -1,2 +1,7 @@
 node_modules/
 dist/micado_wasm.wasm
+dist/*.js
+dist/*.js.map
+dist/*.d.ts
+dist/*.d.ts.map
+dist/platform/

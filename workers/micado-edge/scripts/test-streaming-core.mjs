@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 
 import assert from "node:assert/strict";
-import { streamTokenize } from "../src/lib/streaming/engine.mjs";
+import { streamTokenize } from "../src/lib/streaming/engine.ts";
 import {
   consumeBlockTokens,
   dropConsumedTokens,
   mergePendingTokens,
-} from "../src/lib/streaming/pending-tokens.mjs";
-import { createQuoteState, scanForBoundary } from "../src/lib/streaming/quote-boundary.mjs";
+} from "../src/lib/streaming/pending-tokens.ts";
+import { createQuoteState, scanForBoundary } from "../src/lib/streaming/quote-boundary.ts";
 
 function makeTokens(parts, posDetail = "記号,一般") {
   let cursor = 0;
