@@ -1,0 +1,17 @@
+{
+  "import": [
+    {
+      "path": "username/micado_mbt/src/types",
+      "alias": "types"
+    },
+    {
+      "path": "moonbitlang/core/ref",
+      "alias": "ref"
+    },
+    "moonbitlang/core/encoding/utf8",
+    {
+      "path": "moonbitlang/core/hashmap",
+      "alias": "hashmap"
+    }
+  ]
+}

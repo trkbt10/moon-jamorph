@@ -10,6 +10,10 @@
       "alias": "types"
     },
     {
+      "path": "username/micado_mbt/src/core/runtime_dict",
+      "alias": "runtime"
+    },
+    {
       "path": "moonbitlang/core/buffer",
       "alias": "buffer"
     },
@@ -23,7 +27,13 @@
     "wasm": {
       "exports": [
         "reset_input",
+        "reset_dic_input",
         "push_input_byte",
+        "push_dic_input_byte",
+        "load_dic_bin",
+        "dictionary_entry_count",
+        "dictionary_max_surface_length",
+        "dictionary_connection_id_count",
         "tokenize_nano_tsv",
         "tokenize_mini_tsv",
         "output_length",

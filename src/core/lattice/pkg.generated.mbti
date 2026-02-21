@@ -6,11 +6,11 @@ import {
 }
 
 // Values
-pub fn candidates_at(Array[Char], Array[@types.CharClass], Int, Int) -> Array[@types.TokenCandidate]
+pub fn candidates_at(Array[Char], Array[@types.CharClass], Int) -> Array[@types.TokenCandidate]
 
-pub fn candidates_at_into(Array[@types.TokenCandidate], Array[Char], Array[@types.CharClass], Int, Int) -> Unit
+pub fn candidates_at_into(Array[@types.TokenCandidate], Array[Char], Array[@types.CharClass], Int) -> Unit
 
-pub fn candidates_at_into_with_run_lengths(Array[@types.TokenCandidate], Array[Char], Array[@types.CharClass], Array[Int], Int, Int) -> Unit
+pub fn candidates_at_into_with_run_lengths(Array[@types.TokenCandidate], Array[Char], Array[@types.CharClass], Array[Int], Int) -> Unit
 
 // Errors
 

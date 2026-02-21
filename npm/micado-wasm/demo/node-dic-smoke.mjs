@@ -11,6 +11,9 @@ const fullTokens = full.tokenize(sentence);
 if (full.stats.entryCount < 300000) {
   throw new Error(`full profile too small: ${full.stats.entryCount}`);
 }
+if ((full.stats.connectionIdCount ?? 0) < 100) {
+  throw new Error(`connection matrix ids too small: ${full.stats.connectionIdCount}`);
+}
 
 const fullSurfaces = fullTokens.map((t) => t.surface);
 for (const required of ["吾輩", "猫", "名前", "無い"]) {

@@ -2,11 +2,23 @@
 package "username/micado_mbt/cmd/wasm_api"
 
 // Values
+pub fn dictionary_connection_id_count() -> Int
+
+pub fn dictionary_entry_count() -> Int
+
+pub fn dictionary_max_surface_length() -> Int
+
+pub fn load_dic_bin() -> Int
+
 pub fn output_byte_at(Int) -> Int
 
 pub fn output_length() -> Int
 
+pub fn push_dic_input_byte(Int) -> Unit
+
 pub fn push_input_byte(Int) -> Unit
+
+pub fn reset_dic_input() -> Unit
 
 pub fn reset_input() -> Unit
 

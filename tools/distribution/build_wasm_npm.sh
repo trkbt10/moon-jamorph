@@ -2,7 +2,10 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
+PKG_DIR="$ROOT_DIR/cmd/wasm_api"
+WASM_SRC="$ROOT_DIR/_build/wasm/release/build/cmd/wasm_api/wasm_api.wasm"
 WASM_DST_DIR="$ROOT_DIR/npm/micado-wasm/dist"
+WASM_DST="$WASM_DST_DIR/micado_wasm.wasm"
 WEB_TSV="$ROOT_DIR/tools/dict-compiler/.cache/web-small/ipadic_web_small.tsv"
 
 WEB_DIC_TINY_LIMIT="${WEB_DIC_TINY_LIMIT:-1500}"
@@ -24,6 +27,9 @@ for limit in "$WEB_DIC_MINI_LIMIT" "$WEB_DIC_MEDIUM_LIMIT" "$WEB_DIC_FULL_LIMIT"
 done
 
 mkdir -p "$WASM_DST_DIR"
+
+moon build -C "$ROOT_DIR" --target wasm "$PKG_DIR"
+cp "$WASM_SRC" "$WASM_DST"
 
 "$ROOT_DIR/tools/dict-compiler/scripts/build_web_small_tsv.sh" "$max_limit"
 
@@ -56,6 +62,8 @@ build_profile full "$WEB_DIC_FULL_LIMIT"
 cp "$WASM_DST_DIR/medium.dic.bin" "$WASM_DST_DIR/micado_web_small.dic.bin"
 cp "$WASM_DST_DIR/medium.dic.bin.deflate" "$WASM_DST_DIR/micado_web_small.dic.bin.deflate"
 
+echo "[build_wasm_npm] copied: $WASM_DST"
+ls -lh "$WASM_DST"
 if [[ -f "$WEB_FREQ_TSV" ]]; then
   echo "[build_wasm_npm] frequency source: $WEB_FREQ_TSV"
 fi

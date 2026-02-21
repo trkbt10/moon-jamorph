@@ -10,6 +10,7 @@
   "files": [
     "index.mjs",
     "dic-bin.mjs",
+    "dist/micado_wasm.wasm",
     "dist/*.dic.bin",
     "dist/*.dic.bin.deflate",
     "README.md",

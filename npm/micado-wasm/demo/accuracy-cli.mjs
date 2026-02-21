@@ -96,7 +96,8 @@ async function main() {
 
   for (const profile of options.profiles) {
     const tokenizer = await createTokenizer({ profile, compressed: true });
-    const dictSurfaceSet = new Set(tokenizer.entries.map((e) => e.surface));
+    const entries = Array.isArray(tokenizer.entries) ? tokenizer.entries : [];
+    const dictSurfaceSet = new Set(entries.map((e) => e.surface));
 
     let sentenceExact = 0;
     let tokenMatch = 0;
@@ -145,15 +146,17 @@ async function main() {
     let coveredByDict = 0;
     let totalFreq = 0;
     const missing = [];
-    for (const [surface, count] of refSurfaceFreq.entries()) {
-      totalFreq += count;
-      if (dictSurfaceSet.has(surface)) {
-        coveredByDict += count;
-      } else {
-        missing.push({ surface, count });
+    if (entries.length > 0) {
+      for (const [surface, count] of refSurfaceFreq.entries()) {
+        totalFreq += count;
+        if (dictSurfaceSet.has(surface)) {
+          coveredByDict += count;
+        } else {
+          missing.push({ surface, count });
+        }
       }
+      missing.sort((a, b) => b.count - a.count || a.surface.localeCompare(b.surface, "ja"));
     }
-    missing.sort((a, b) => b.count - a.count || a.surface.localeCompare(b.surface, "ja"));
 
     console.log(`\n[profile=${profile}]`);
     console.log(`entry_count=${tokenizer.stats.entryCount}`);
@@ -164,19 +167,27 @@ async function main() {
     console.log(
       `boundary: precision=${(boundaryPrecision * 100).toFixed(2)}% recall=${(boundaryRecall * 100).toFixed(2)}% f1=${(boundaryF1 * 100).toFixed(2)}%`,
     );
-    console.log(`dict_coverage_by_ref_freq=${coveredByDict}/${totalFreq} (${fmtPct(coveredByDict, totalFreq)})`);
+    if (entries.length > 0) {
+      console.log(`dict_coverage_by_ref_freq=${coveredByDict}/${totalFreq} (${fmtPct(coveredByDict, totalFreq)})`);
+    } else {
+      console.log("dict_coverage_by_ref_freq=unavailable (wasm runtime index)");
+    }
 
     const failed = perSentence.filter((x) => !x.exact).map((x) => x.label);
     console.log(`failed_examples=${failed.length === 0 ? "none" : failed.join(" | ")}`);
 
-    const topMissing = missing.slice(0, options.top);
-    if (topMissing.length === 0) {
-      console.log("top_missing_surfaces=none");
-    } else {
-      console.log("top_missing_surfaces:");
-      for (const row of topMissing) {
-        console.log(`  ${row.surface}\t${row.count}`);
+    if (entries.length > 0) {
+      const topMissing = missing.slice(0, options.top);
+      if (topMissing.length === 0) {
+        console.log("top_missing_surfaces=none");
+      } else {
+        console.log("top_missing_surfaces:");
+        for (const row of topMissing) {
+          console.log(`  ${row.surface}\t${row.count}`);
+        }
       }
+    } else {
+      console.log("top_missing_surfaces=unavailable");
     }
   }
 }
