@@ -13,5 +13,8 @@
       "path": "moonbitlang/core/hashmap",
       "alias": "hashmap"
     }
+  ],
+  "wbtest-import": [
+    "moonbitlang/core/buffer"
   ]
 }
