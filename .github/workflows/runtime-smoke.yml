@@ -45,6 +45,11 @@ jobs:
           moon version --all
           moon update
 
+      - name: Build Streaming Package
+        run: |
+          npm --prefix packages/micado-streaming ci
+          npm --prefix packages/micado-streaming run build
+
       - name: Runtime verification
         run: |
           tools/distribution/check_no_tmp_moonpkg.sh
