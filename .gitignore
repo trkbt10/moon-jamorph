@@ -17,10 +17,11 @@ node_modules/
 # Temporary
 tmp/
 
-# Docs (except specific READMEs)
+# Docs (except specific READMEs and CHANGELOG)
 *.md
 !/README.md
 !/README.mbt.md
+!/CHANGELOG.md
 !/npm/micado-wasm/README.md
 
 # Dictionary resources

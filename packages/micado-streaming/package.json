@@ -1,6 +1,6 @@
 {
   "name": "@trkbt10/micado-streaming",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Streaming tokenization utilities for micado",
   "type": "module",
   "main": "./dist/index.js",

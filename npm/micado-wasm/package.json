@@ -1,6 +1,6 @@
 {
   "name": "@trkbt10/micado",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Japanese morphological analyzer with WASM runtime and streaming support",
   "type": "module",
   "exports": {
