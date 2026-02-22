@@ -11,6 +11,7 @@ tmp/
 *.md
 !/README.md
 !/README.mbt.md
+!/npm/micado-wasm/README.md
 
 # external dictionary resources
 dic/

@@ -1,6 +1,6 @@
 {
   "name": "micado",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "micado tokenizer: unified dic.bin runtime with profile-selectable dictionaries",
   "type": "module",
   "exports": {
