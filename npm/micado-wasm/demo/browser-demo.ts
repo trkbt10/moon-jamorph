@@ -2,8 +2,10 @@ import {
   createTokenizer,
   DICTIONARY_PROFILES,
   AOZORA_EXAMPLES,
+  type DictionaryProfile,
+  type DetailedToken,
+  type Tokenizer,
 } from "../src/index.js";
-import type { DetailedToken, DictionaryProfile, Tokenizer } from "../src/types.js";
 
 const statusEl = document.querySelector<HTMLElement>("#status")!;
 const inputEl = document.querySelector<HTMLTextAreaElement>("#input")!;

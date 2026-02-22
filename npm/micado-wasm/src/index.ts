@@ -15,6 +15,43 @@ import {
 } from "@trkbt10/micado-streaming";
 
 // ============================================================================
+// Dictionary Profiles
+// ============================================================================
+
+/**
+ * Dictionary profile identifiers.
+ */
+export type DictionaryProfile = "tiny" | "mini" | "medium" | "full";
+
+/**
+ * All available dictionary profiles.
+ */
+export const DICTIONARY_PROFILES: readonly DictionaryProfile[] = [
+  "tiny",
+  "mini",
+  "medium",
+  "full",
+] as const;
+
+/**
+ * Options for createTokenizerWithProfile().
+ */
+export interface TokenizerOptions {
+  /** Dictionary profile (default: "full") */
+  profile?: DictionaryProfile;
+  /** Whether dictionary is deflate-compressed (default: true) */
+  compressed?: boolean;
+}
+
+/**
+ * Get dictionary URL for a profile.
+ */
+function getDictionaryURL(profile: DictionaryProfile, compressed: boolean): URL {
+  const ext = compressed ? ".dic.bin.deflate" : ".dic.bin";
+  return new URL(`../dist/${profile}${ext}`, import.meta.url);
+}
+
+// ============================================================================
 // Dictionary Loading
 // ============================================================================
 
@@ -120,12 +157,25 @@ function createWasmBridge(exports: MicadoWasmExports): WasmBridge {
 // ============================================================================
 
 /**
- * Create a tokenizer with the given dictionary.
- * @param dictionary - Dictionary binary from loadDictionary()
+ * Create a tokenizer with a dictionary binary or profile options.
+ * @param input - Dictionary binary from loadDictionary(), or TokenizerOptions
  */
 export async function createTokenizer(
-  dictionary: Uint8Array
+  input: Uint8Array | TokenizerOptions
 ): Promise<Tokenizer> {
+  // Handle TokenizerOptions
+  let dictionary: Uint8Array;
+  let profileName: DictionaryProfile | "custom" = "custom";
+
+  if (input instanceof Uint8Array) {
+    dictionary = input;
+  } else {
+    const profile = input.profile ?? "full";
+    const compressed = input.compressed ?? true;
+    profileName = profile;
+    const url = getDictionaryURL(profile, compressed);
+    dictionary = await loadDictionary(url);
+  }
   // Load and instantiate WASM
   const wasmBinary = await loadBinary(DEFAULT_WASM_URL);
   const result = await WebAssembly.instantiate(wasmBinary, {});
@@ -154,7 +204,7 @@ export async function createTokenizer(
       return createTokenStreamWriter(
         {
           tokenizeTSV: (text: string) => bridge.tokenizeTSV(text),
-          profile: "custom",
+          profile: profileName,
           stats: {
             entryCount: stats.entryCount,
             bytes: stats.bytes,
