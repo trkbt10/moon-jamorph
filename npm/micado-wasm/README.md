@@ -2,7 +2,7 @@
 
 Japanese morphological analyzer powered by MoonBit + WebAssembly.
 
-[![npm version](https://img.shields.io/npm/v/micado.svg)](https://www.npmjs.com/package/micado)
+[![npm version](https://img.shields.io/npm/v/@trkbt10/micado.svg)](https://www.npmjs.com/package/@trkbt10/micado)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](https://github.com/trkbt10/moon-jamorph/blob/main/LICENSE)
 
 ## Features
@@ -16,13 +16,13 @@ Japanese morphological analyzer powered by MoonBit + WebAssembly.
 ## Installation
 
 ```bash
-npm install micado
+npm install @trkbt10/micado
 ```
 
 ## Quick Start
 
 ```javascript
-import { createTokenizer } from "micado";
+import { createTokenizer } from "@trkbt10/micado";
 
 const tokenizer = await createTokenizer();
 const tokens = tokenizer.tokenize("吾輩は猫である。名前はまだ無い。");
@@ -116,7 +116,7 @@ interface CompactToken {
 
 ```html
 <script type="module">
-import { createTokenizer } from "https://cdn.jsdelivr.net/npm/micado/dist/index.js";
+import { createTokenizer } from "https://cdn.jsdelivr.net/npm/@trkbt10/micado/dist/index.js";
 
 const tokenizer = await createTokenizer({ profile: "tiny" });
 const tokens = tokenizer.tokenize("こんにちは世界");
