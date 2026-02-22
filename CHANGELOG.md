@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.0] - 2026-02-22
+
+### Added
+- **feat**: Add subpath exports for types, streaming, wasm, and dictionary files
+- **feat**: Restore `DICTIONARY_PROFILES` and profile-based `createTokenizer()` API
+
+### Changed
+- **refactor**: Optimize npm package size (66MB → 12MB) by excluding uncompressed dictionaries
+- **refactor**: Exclude `.d.ts` files from vite demo build
+
+### Fixed
+- **fix**: Build `micado-streaming` before `npm/micado-wasm` in CI workflows
+
 ## [0.3.0] - 2026-02-22
 
 ### Changed

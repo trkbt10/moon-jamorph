@@ -1,20 +1,42 @@
 {
   "name": "@trkbt10/micado",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Japanese morphological analyzer with WASM runtime and streaming support",
   "type": "module",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
-    }
+    },
+    "./types": {
+      "types": "./dist/types.d.ts",
+      "import": "./dist/types.js"
+    },
+    "./streaming": {
+      "types": "./dist/streaming.d.ts",
+      "import": "./dist/streaming.js"
+    },
+    "./wasm": "./dist/micado_wasm.wasm",
+    "./cli-wasm": "./dist/micado_cli.wasm",
+    "./dict/tiny": "./dist/tiny.dic.bin.deflate",
+    "./dict/mini": "./dist/mini.dic.bin.deflate",
+    "./dict/medium": "./dist/medium.dic.bin.deflate",
+    "./dict/full": "./dist/full.dic.bin.deflate",
+    "./dict/LICENSE": "./dist/LICENSE.dic.bin"
   },
   "types": "./dist/index.d.ts",
   "bin": {
     "micado": "./bin/micado.mjs"
   },
   "files": [
-    "dist",
+    "dist/**/*.js",
+    "dist/**/*.d.ts",
+    "dist/**/*.wasm",
+    "dist/tiny.dic.bin.deflate",
+    "dist/mini.dic.bin.deflate",
+    "dist/medium.dic.bin.deflate",
+    "dist/full.dic.bin.deflate",
+    "dist/LICENSE.dic.bin",
     "bin",
     "README.md"
   ],

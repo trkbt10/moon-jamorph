@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
-# Synchronize version from moon.mod.json to npm/micado-wasm/package.json
+# Synchronize version from moon.mod.json to all package.json files
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 MOON_MOD="$ROOT_DIR/moon.mod.json"
-NPM_PKG="$ROOT_DIR/npm/micado-wasm/package.json"
 
 VERSION="$(jq -r '.version' "$MOON_MOD")"
 
@@ -13,14 +12,30 @@ if [[ -z "$VERSION" || "$VERSION" == "null" ]]; then
   exit 1
 fi
 
-CURRENT_NPM_VERSION="$(jq -r '.version' "$NPM_PKG")"
+echo "[sync_versions] source version: $VERSION"
 
-if [[ "$CURRENT_NPM_VERSION" == "$VERSION" ]]; then
-  echo "[sync_versions] versions already in sync: $VERSION"
-  exit 0
-fi
+sync_package() {
+  local pkg="$1"
+  if [[ ! -f "$pkg" ]]; then
+    echo "[sync_versions] skip (not found): $pkg"
+    return
+  fi
 
-jq --arg v "$VERSION" '.version = $v' "$NPM_PKG" > "$NPM_PKG.tmp"
-mv "$NPM_PKG.tmp" "$NPM_PKG"
+  local current
+  current="$(jq -r '.version // "none"' "$pkg")"
 
-echo "[sync_versions] updated $NPM_PKG: $CURRENT_NPM_VERSION -> $VERSION"
+  if [[ "$current" == "$VERSION" ]]; then
+    echo "[sync_versions] already in sync: $pkg"
+    return
+  fi
+
+  jq --arg v "$VERSION" '.version = $v' "$pkg" > "$pkg.tmp"
+  mv "$pkg.tmp" "$pkg"
+  echo "[sync_versions] updated: $pkg ($current -> $VERSION)"
+}
+
+sync_package "$ROOT_DIR/npm/micado-wasm/package.json"
+sync_package "$ROOT_DIR/packages/micado-streaming/package.json"
+sync_package "$ROOT_DIR/workers/micado-edge/package.json"
+
+echo "[sync_versions] done"

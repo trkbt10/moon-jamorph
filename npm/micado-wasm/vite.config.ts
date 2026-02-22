@@ -18,9 +18,8 @@ export default defineConfig({
       name: "exclude-uncompressed-dic",
       generateBundle(_, bundle) {
         for (const fileName of Object.keys(bundle)) {
-          // Vite renames assets like: tiny.dic.bin -> tiny.dic-HASH.bin
+          // Exclude uncompressed dic files (e.g., tiny.dic-HASH.bin)
           // Keep: *.deflate, LICENSE.dic*
-          // Exclude: uncompressed dic files (e.g., tiny.dic-HASH.bin, full.dic-HASH.bin)
           if (
             fileName.match(/\.dic[^/]*\.bin$/) &&
             !fileName.includes("deflate") &&

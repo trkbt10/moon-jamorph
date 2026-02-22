@@ -1,0 +1,11 @@
+# Exclude uncompressed dictionary files (keep only .deflate)
+dist/*.dic.bin
+!dist/*.dic.bin.deflate
+!dist/LICENSE.dic.bin
+
+# Exclude micado_web_small (duplicate of medium)
+dist/micado_web_small.dic.bin
+dist/micado_web_small.dic.bin.deflate
+
+# Dev files
+dist/.gitkeep
