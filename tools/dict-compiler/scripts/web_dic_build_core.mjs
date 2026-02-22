@@ -11,7 +11,7 @@ import {
   writeFile,
 } from "node:fs/promises";
 import { constants as FsConstants } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { createInterface } from "node:readline";
 import { fileURLToPath } from "node:url";
 import { deflateSync } from "node:zlib";
@@ -239,6 +239,95 @@ function parseFreqTSV(text) {
   return map;
 }
 
+// Compare function for row ordering (higher priority = should come first)
+function compareRows(a, b) {
+  if (a.freq !== b.freq) {
+    return b.freq - a.freq;
+  }
+  if (a.word_cost !== b.word_cost) {
+    return a.word_cost - b.word_cost;
+  }
+  if (a.surface.length !== b.surface.length) {
+    return b.surface.length - a.surface.length;
+  }
+  if (a.surface < b.surface) {
+    return -1;
+  }
+  if (a.surface > b.surface) {
+    return 1;
+  }
+  if (a.feature < b.feature) {
+    return -1;
+  }
+  if (a.feature > b.feature) {
+    return 1;
+  }
+  if (a.left_id !== b.left_id) {
+    return a.left_id - b.left_id;
+  }
+  if (a.right_id !== b.right_id) {
+    return a.right_id - b.right_id;
+  }
+  return a.word_cost - b.word_cost;
+}
+
+// Iterative heapsort to avoid stack overflow for large arrays
+// Sorts in ascending order according to compareFn (negative = a before b)
+function iterativeHeapSort(arr, compareFn) {
+  const n = arr.length;
+  if (n <= 1) return arr;
+
+  // Build max heap (iteratively)
+  // For ascending order, we need max-heap: parent > children
+  // compareFn(child, parent) > 0 means child should come after parent (child is "larger")
+  for (let i = Math.floor(n / 2) - 1; i >= 0; i--) {
+    let idx = i;
+    while (true) {
+      let largest = idx;
+      const left = 2 * idx + 1;
+      const right = 2 * idx + 2;
+
+      // compareFn(a, b) < 0 means a comes before b, so a is "smaller"
+      // For max-heap, we want to promote the "larger" child (comes after)
+      if (left < n && compareFn(arr[left], arr[largest]) > 0) {
+        largest = left;
+      }
+      if (right < n && compareFn(arr[right], arr[largest]) > 0) {
+        largest = right;
+      }
+      if (largest === idx) break;
+
+      [arr[idx], arr[largest]] = [arr[largest], arr[idx]];
+      idx = largest;
+    }
+  }
+
+  // Extract elements from heap (largest goes to end, resulting in ascending order)
+  for (let i = n - 1; i > 0; i--) {
+    [arr[0], arr[i]] = [arr[i], arr[0]];
+
+    let idx = 0;
+    while (true) {
+      let largest = idx;
+      const left = 2 * idx + 1;
+      const right = 2 * idx + 2;
+
+      if (left < i && compareFn(arr[left], arr[largest]) > 0) {
+        largest = left;
+      }
+      if (right < i && compareFn(arr[right], arr[largest]) > 0) {
+        largest = right;
+      }
+      if (largest === idx) break;
+
+      [arr[idx], arr[largest]] = [arr[largest], arr[idx]];
+      idx = largest;
+    }
+  }
+
+  return arr;
+}
+
 function parseRows(tsvText, freqMap) {
   const rows = [];
   for (const line of tsvText.split(/\r?\n/)) {
@@ -268,36 +357,8 @@ function parseRows(tsvText, freqMap) {
     });
   }
 
-  rows.sort((a, b) => {
-    if (a.freq !== b.freq) {
-      return b.freq - a.freq;
-    }
-    if (a.word_cost !== b.word_cost) {
-      return a.word_cost - b.word_cost;
-    }
-    if (a.surface.length !== b.surface.length) {
-      return b.surface.length - a.surface.length;
-    }
-    if (a.surface < b.surface) {
-      return -1;
-    }
-    if (a.surface > b.surface) {
-      return 1;
-    }
-    if (a.feature < b.feature) {
-      return -1;
-    }
-    if (a.feature > b.feature) {
-      return 1;
-    }
-    if (a.left_id !== b.left_id) {
-      return a.left_id - b.left_id;
-    }
-    if (a.right_id !== b.right_id) {
-      return a.right_id - b.right_id;
-    }
-    return a.word_cost - b.word_cost;
-  });
+  // Use iterative heapsort to avoid stack overflow for large arrays
+  iterativeHeapSort(rows, compareRows);
 
   return rows;
 }
@@ -460,6 +521,295 @@ function encodeBin(rows, matrix) {
   }
 
   return out;
+}
+
+// ============================================================
+// MeCab dictionary directory support
+// ============================================================
+
+/**
+ * Check if buffer appears to be valid UTF-8 with Japanese characters
+ * @param {Buffer} buffer - Input buffer
+ * @returns {boolean} true if the buffer looks like valid UTF-8 Japanese text
+ */
+function isLikelyUtf8Japanese(buffer) {
+  // Check for valid UTF-8 sequences with Japanese character patterns
+  // UTF-8 Japanese hiragana: E3 81 xx to E3 82 xx
+  // UTF-8 Japanese katakana: E3 82 xx to E3 83 xx
+  // UTF-8 Japanese kanji: E4-E9 xx xx
+  let hasUtf8Japanese = false;
+  for (let i = 0; i < Math.min(buffer.length - 2, 1000); i++) {
+    const b0 = buffer[i];
+    const b1 = buffer[i + 1];
+    // Check for UTF-8 3-byte sequence starting with E3-E9 (common in Japanese)
+    if (b0 >= 0xe3 && b0 <= 0xe9 && (b1 & 0xc0) === 0x80) {
+      hasUtf8Japanese = true;
+      break;
+    }
+  }
+  return hasUtf8Japanese;
+}
+
+/**
+ * Detect charset from dicrc file in MeCab dictionary directory
+ * Also checks actual file content to handle cases where dicrc is wrong
+ * @param {string} dicPath - Path to MeCab dictionary directory
+ * @returns {Promise<string>} Charset name (e.g., "EUC-JP", "UTF-8")
+ */
+async function detectCharsetFromDicrc(dicPath) {
+  // First, try to detect from actual file content
+  // The mecab-ipadic-seed archive is UTF-8 despite dicrc claiming EUC-JP
+  const names = await readdir(dicPath);
+  const csvFiles = names.filter((name) => name.endsWith(".csv"));
+  if (csvFiles.length > 0) {
+    try {
+      const samplePath = join(dicPath, csvFiles[0]);
+      const sampleBuffer = await readFile(samplePath);
+      if (isLikelyUtf8Japanese(sampleBuffer)) {
+        return "UTF-8";
+      }
+    } catch {
+      // Ignore errors, fall through to dicrc detection
+    }
+  }
+
+  // Fall back to dicrc-based detection
+  try {
+    const dicrcPath = join(dicPath, "dicrc");
+    const content = await readFile(dicrcPath, "utf-8");
+    // Look for: config-charset = EUC-JP
+    const match = content.match(/config-charset\s*=\s*(\S+)/i);
+    if (match) {
+      return match[1].toUpperCase();
+    }
+  } catch {
+    // dicrc not found or unreadable
+  }
+  return "UTF-8";
+}
+
+/**
+ * Convert buffer to UTF-8 string based on charset
+ * @param {Buffer} buffer - Input buffer
+ * @param {string} charset - Source charset (e.g., "EUC-JP", "UTF-8")
+ * @returns {string} UTF-8 string
+ */
+function convertToUtf8(buffer, charset) {
+  const normalizedCharset = charset.toUpperCase().replace(/-/g, "");
+  if (normalizedCharset === "UTF8") {
+    return buffer.toString("utf-8");
+  }
+  // Use TextDecoder for EUC-JP and other encodings
+  // Node.js TextDecoder supports: "euc-jp", "shift_jis", "iso-2022-jp", etc.
+  const encodingMap = {
+    EUCJP: "euc-jp",
+    "EUC-JP": "euc-jp",
+    SHIFTJIS: "shift_jis",
+    "SHIFT-JIS": "shift_jis",
+    SJIS: "shift_jis",
+  };
+  const encoding = encodingMap[charset.toUpperCase()] || charset.toLowerCase();
+  try {
+    const decoder = new TextDecoder(encoding);
+    return decoder.decode(buffer);
+  } catch (err) {
+    console.warn(`[mecab] TextDecoder failed for ${charset}, falling back to UTF-8: ${err.message}`);
+    return buffer.toString("utf-8");
+  }
+}
+
+/**
+ * Parse MeCab CSV line (handles quoted fields properly)
+ * MeCab CSV format: surface,leftId,rightId,cost,pos1,pos2,pos3,pos4,cType,cForm,base,reading,pronunciation
+ * @param {string} line - CSV line
+ * @returns {string[]|null} Parsed columns or null if invalid
+ */
+function parseMecabCsvLine(line) {
+  if (!line || line.startsWith("#")) {
+    return null;
+  }
+  const cols = [];
+  let current = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        current += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (c === "," && !inQuotes) {
+      cols.push(current);
+      current = "";
+    } else {
+      current += c;
+    }
+  }
+  cols.push(current);
+
+  if (cols.length < 5) {
+    return null;
+  }
+  return cols;
+}
+
+/**
+ * Load CSV entries from a single MeCab CSV file
+ * @param {string} csvPath - Path to CSV file
+ * @param {string} charset - Source charset for conversion
+ * @returns {Promise<string[]>} Array of TSV-formatted lines
+ */
+async function loadMecabCsvFile(csvPath, charset) {
+  const out = [];
+  const buffer = await readFile(csvPath);
+  const content = convertToUtf8(buffer, charset);
+
+  for (const line of content.split(/\r?\n/)) {
+    const cols = parseMecabCsvLine(line);
+    if (!cols) {
+      continue;
+    }
+
+    const surface = cols[0] ?? "";
+    if (!surface) {
+      continue;
+    }
+
+    const leftId = cols[1] ?? "";
+    const rightId = cols[2] ?? "";
+    const wordCost = cols[3] ?? "";
+    const pos1 = cols[4] ?? "";
+    const pos2 = cols[5] ?? "";
+    const pos3 = cols[6] ?? "";
+    const pos4 = cols[7] ?? "";
+    const ctype = cols[8] === "" ? "*" : cols[8] ?? "*";
+    const cform = cols[9] === "" ? "*" : cols[9] ?? "*";
+    const base = cols[10] === "" ? surface : cols[10] ?? surface;
+    const read = cols[11] === "" ? "*" : cols[11] ?? "*";
+    const pron = cols[12] === "" ? "*" : cols[12] ?? "*";
+
+    out.push(
+      [surface, leftId, rightId, wordCost, pos1, pos2, pos3, pos4, ctype, cform, base, read, pron].join("\t"),
+    );
+  }
+  return out;
+}
+
+/**
+ * Load all entries from a MeCab dictionary directory
+ * Reads CSV files and converts them to TSV format
+ * @param {string} mecabDicPath - Path to MeCab dictionary directory
+ * @returns {Promise<{rows: string[], matrixDefPath: string|null, charset: string}>}
+ */
+export async function loadFromMecabDir(mecabDicPath) {
+  const dicPath = resolve(mecabDicPath);
+
+  // Check directory exists
+  const dirStat = await stat(dicPath).catch(() => null);
+  if (!dirStat || !dirStat.isDirectory()) {
+    throw new Error(`MeCab dictionary directory not found: ${dicPath}`);
+  }
+
+  // Detect charset from dicrc
+  const charset = await detectCharsetFromDicrc(dicPath);
+  console.log(`[mecab] detected charset: ${charset}`);
+
+  // Find CSV files
+  const names = await readdir(dicPath);
+  const csvFiles = names
+    .filter((name) => name.endsWith(".csv"))
+    .map((name) => join(dicPath, name))
+    .sort();
+
+  if (csvFiles.length === 0) {
+    throw new Error(`No CSV files found in MeCab dictionary: ${dicPath}`);
+  }
+  console.log(`[mecab] found ${csvFiles.length} CSV files`);
+
+  // Load all CSV files
+  const allRows = [];
+  for (const csvPath of csvFiles) {
+    const rows = await loadMecabCsvFile(csvPath, charset);
+    // Use loop instead of spread to avoid stack overflow for large arrays
+    for (const row of rows) {
+      allRows.push(row);
+    }
+    console.log(`[mecab] loaded ${rows.length} entries from ${csvPath.split("/").pop()}`);
+  }
+  console.log(`[mecab] total entries: ${allRows.length}`);
+
+  // Check for matrix.def
+  const matrixDefPath = join(dicPath, "matrix.def");
+  const hasMatrix = await exists(matrixDefPath);
+
+  return {
+    rows: allRows,
+    matrixDefPath: hasMatrix ? matrixDefPath : null,
+    charset,
+  };
+}
+
+/**
+ * Compile dic.bin directly from MeCab dictionary directory
+ * @param {Object} options
+ * @param {string} options.mecabDicPath - Path to MeCab dictionary directory
+ * @param {string} options.outputPath - Output path for dic.bin
+ * @param {number} [options.limit] - Maximum number of entries
+ * @param {string} [options.freqPath] - Optional frequency TSV file
+ * @returns {Promise<{outputPath: string, entries: number, ids: number, bytes: number, kb: string, charset: string}>}
+ */
+export async function compileDicBinFromMecabDir({
+  mecabDicPath,
+  outputPath,
+  limit = Number.MAX_SAFE_INTEGER,
+  freqPath = null,
+} = {}) {
+  if (!mecabDicPath || !outputPath) {
+    throw new Error("mecabDicPath and outputPath are required");
+  }
+
+  const actualLimit = parsePositiveLimit(limit, "--limit");
+
+  // Load from MeCab directory
+  const { rows: allTsvRows, matrixDefPath, charset } = await loadFromMecabDir(mecabDicPath);
+
+  // Join rows as TSV text
+  const tsvText = allTsvRows.join("\n");
+
+  // Load matrix.def
+  let matrixPath = matrixDefPath;
+  if (!matrixPath) {
+    const defaultPaths = resolveDefaultPaths();
+    matrixPath = defaultPaths.defaultMatrixDefPath;
+    console.log(`[mecab] matrix.def not found, using default: ${matrixPath}`);
+  }
+  const matrixText = await readFile(matrixPath, "utf8");
+
+  // Load frequency data if provided
+  const freqMap = freqPath ? parseFreqTSV(await readFile(resolve(freqPath), "utf8")) : null;
+
+  // Parse and process rows
+  const parsedRows = parseRows(tsvText, freqMap);
+  const rows = trimRows(parsedRows, actualLimit);
+  const usedIds = collectUsedIds(rows);
+  const matrix = parseCompactMatrix(matrixText, usedIds, DEFAULT_CONNECTION_COST);
+  const bin = encodeBin(rows, matrix);
+
+  await mkdir(dirname(resolve(outputPath)), { recursive: true });
+  await writeFile(resolve(outputPath), bin);
+
+  return {
+    outputPath: resolve(outputPath),
+    entries: rows.length,
+    ids: matrix.ids.length,
+    bytes: bin.byteLength,
+    kb: (bin.byteLength / 1024).toFixed(1),
+    charset,
+    freqPath: freqPath ? resolve(freqPath) : null,
+  };
 }
 
 async function extractCsvRows(csvPath, limitPerFile) {

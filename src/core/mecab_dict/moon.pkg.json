@@ -1,0 +1,22 @@
+{
+  "import": [
+    {
+      "path": "trkbt10/micado_mbt/src/core/runtime_dict",
+      "alias": "runtime"
+    },
+    {
+      "path": "trkbt10/micado_mbt/src/types",
+      "alias": "types"
+    },
+    {
+      "path": "moonbitlang/core/buffer",
+      "alias": "buffer"
+    },
+    "moonbitlang/core/encoding/utf8",
+    "moonbitlang/core/hashmap"
+  ],
+  "targets": {
+    "io_native.mbt": ["native", "llvm"],
+    "io_stub.mbt": ["wasm", "wasm-gc", "js"]
+  }
+}
