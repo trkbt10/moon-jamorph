@@ -11,6 +11,7 @@ on:
       - "cmd/wasm_api/**"
       - "src/**"
       - "npm/micado-wasm/**"
+      - "packages/micado-streaming/**"
       - "tools/distribution/build_wasm_npm.sh"
       - "tools/dict-compiler/scripts/build_web_dic_artifacts.mjs"
       - "tools/dict-compiler/scripts/web_dic_build_core.mjs"
@@ -55,6 +56,11 @@ jobs:
         run: |
           moon update
           tools/distribution/build_wasm_npm.sh
+
+      - name: Build Streaming Package
+        run: |
+          npm --prefix packages/micado-streaming ci
+          npm --prefix packages/micado-streaming run build
 
       - name: Install Demo Dependencies
         run: |

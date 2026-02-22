@@ -48,6 +48,12 @@ jobs:
       - name: Build WASM and dictionaries
         run: tools/distribution/build_wasm_npm.sh
 
+      - name: Build Streaming Package
+        working-directory: packages/micado-streaming
+        run: |
+          npm ci
+          npm run build
+
       - name: Build TypeScript
         working-directory: npm/micado-wasm
         run: |
