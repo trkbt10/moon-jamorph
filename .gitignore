@@ -4,6 +4,7 @@
 # MoonBit
 _build/
 target/
+_site/
 .mooncakes/
 .moonagent/
 
