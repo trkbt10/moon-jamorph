@@ -1,5 +1,5 @@
 {
-  "name": "@micado/wasm",
+  "name": "micado",
   "version": "0.1.0",
   "description": "micado tokenizer: unified dic.bin runtime with profile-selectable dictionaries",
   "type": "module",
