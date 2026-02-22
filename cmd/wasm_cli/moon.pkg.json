@@ -1,0 +1,53 @@
+{
+  "is-main": true,
+  "import": [
+    {
+      "path": "trkbt10/micado_mbt/src/tokenizer",
+      "alias": "tokenizer"
+    },
+    {
+      "path": "trkbt10/micado_mbt/src/types",
+      "alias": "types"
+    },
+    {
+      "path": "trkbt10/micado_mbt/src/cli/tokenize",
+      "alias": "cli_tokenize"
+    },
+    {
+      "path": "trkbt10/micado_mbt/src/core/runtime_dict",
+      "alias": "runtime"
+    },
+    {
+      "path": "moonbitlang/core/buffer",
+      "alias": "buffer"
+    },
+    {
+      "path": "moonbitlang/core/ref",
+      "alias": "ref"
+    },
+    "moonbitlang/core/encoding/utf8"
+  ],
+  "link": {
+    "wasm": {
+      "exports": [
+        "reset_args",
+        "push_arg_byte",
+        "finalize_arg",
+        "init_cli",
+        "get_input_text_count",
+        "process_input_text",
+        "reset_line",
+        "push_line_byte",
+        "process_line",
+        "get_sentence_count",
+        "get_token_count",
+        "output_length",
+        "output_byte_at",
+        "reset_dic_input",
+        "push_dic_input_byte",
+        "load_dic_bin"
+      ],
+      "export-memory-name": "memory"
+    }
+  }
+}

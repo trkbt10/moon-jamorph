@@ -11,7 +11,8 @@ Japanese morphological analyzer powered by MoonBit + WebAssembly.
 - Multiple dictionary profiles: `tiny`, `mini`, `medium`, `full`
 - Deflate-compressed dictionaries for minimal bundle size
 - Works in Node.js and browsers
-- MeCab-compatible token output
+- MeCab-compatible CLI and token output
+- N-best analysis and constrained parsing
 
 ## Installation
 
@@ -19,7 +20,44 @@ Japanese morphological analyzer powered by MoonBit + WebAssembly.
 npm install @trkbt10/micado
 ```
 
-## Quick Start
+## CLI Usage
+
+```bash
+# Install globally
+npm install -g @trkbt10/micado
+
+# Basic usage (reads from stdin)
+echo "吾輩は猫である" | micado
+
+# Wakati (space-separated) output
+echo "吾輩は猫である" | micado -O wakati
+
+# Use specific dictionary profile
+echo "吾輩は猫である" | micado -e tiny
+
+# N-best output
+echo "すもももももも" | micado -N 3
+
+# With npx (no install required)
+echo "吾輩は猫である" | npx @trkbt10/micado
+```
+
+### CLI Options
+
+```
+-h, --help                   Show help
+-O, --output-format-type     mecab (default) | wakati | none | count
+-N, --nbest=INT              Output N best results (default: 1)
+-e, --edition                tiny | mini | medium | full (default: full)
+    --no-unknown             Disallow unknown-token paths
+    --must-break <csv>       Require token boundary at positions
+    --forbid-break <csv>     Forbid token boundary at positions
+    --must-cover-span <csv>  Require exact token spans
+    --allow-pos <csv>        Allow only specified POS
+    --disallow-pos <csv>     Disallow specified POS
+```
+
+## Quick Start (Library)
 
 ```javascript
 import { createTokenizer } from "@trkbt10/micado";

@@ -1,0 +1,12 @@
+{
+  "import": [
+    {
+      "path": "trkbt10/micado_mbt/src/types",
+      "alias": "types"
+    },
+    {
+      "path": "trkbt10/micado_mbt/src/tokenizer",
+      "alias": "tokenizer"
+    }
+  ]
+}
