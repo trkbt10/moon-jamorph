@@ -86,6 +86,90 @@ function parseEditionFromArgs(args) {
   return "full";
 }
 
+function parseDicdirFromArgs(args) {
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === "-d" || args[i] === "--dicdir") {
+      return args[i + 1] || null;
+    }
+    if (args[i].startsWith("--dicdir=")) {
+      return args[i].slice(9);
+    }
+  }
+  return null;
+}
+
+async function loadDictionaryFromDicdir(wasm, dicdir) {
+  const { existsSync } = await import("node:fs");
+  const { inflateSync } = await import("node:zlib");
+
+  // Strategy:
+  // 1. Try micado dic.bin format (full, medium, mini, tiny)
+  // 2. Fall back to MeCab format (sys.dic + matrix.bin)
+
+  // Try profiles in order: full, medium, mini, tiny
+  const profiles = ["full", "medium", "mini", "tiny"];
+
+  for (const profile of profiles) {
+    // Try compressed first
+    const deflatePath = join(dicdir, `${profile}.dic.bin.deflate`);
+    if (existsSync(deflatePath)) {
+      let dicBytes = await readFile(deflatePath);
+      dicBytes = inflateSync(dicBytes);
+      wasm.reset_dic_input();
+      for (const byte of dicBytes) {
+        wasm.push_dic_input_byte(byte);
+      }
+      const result = wasm.load_dic_bin();
+      if (result >= 0) {
+        return { profile, count: result, format: "micado" };
+      }
+    }
+
+    // Try uncompressed
+    const binPath = join(dicdir, `${profile}.dic.bin`);
+    if (existsSync(binPath)) {
+      const dicBytes = await readFile(binPath);
+      wasm.reset_dic_input();
+      for (const byte of dicBytes) {
+        wasm.push_dic_input_byte(byte);
+      }
+      const result = wasm.load_dic_bin();
+      if (result >= 0) {
+        return { profile, count: result, format: "micado" };
+      }
+    }
+  }
+
+  // Try single dic.bin file
+  const singlePath = join(dicdir, "dic.bin");
+  if (existsSync(singlePath)) {
+    const dicBytes = await readFile(singlePath);
+    wasm.reset_dic_input();
+    for (const byte of dicBytes) {
+      wasm.push_dic_input_byte(byte);
+    }
+    const result = wasm.load_dic_bin();
+    if (result >= 0) {
+      return { profile: "dic", count: result, format: "micado" };
+    }
+  }
+
+  // Try MeCab format (sys.dic + matrix.bin)
+  // Note: MeCab dictionary parsing is handled by the MoonBit WASM module
+  // For now, we inform the user that MeCab format support requires conversion
+  const sysDicPath = join(dicdir, "sys.dic");
+  const matrixPath = join(dicdir, "matrix.bin");
+  if (existsSync(sysDicPath) && existsSync(matrixPath)) {
+    throw new Error(
+      `Found MeCab dictionary in ${dicdir} (sys.dic + matrix.bin). ` +
+      `WASM mode requires pre-converted dic.bin format. ` +
+      `Use the native CLI for direct MeCab dictionary support.`
+    );
+  }
+
+  throw new Error(`No dictionary found in ${dicdir} (tried dic.bin and MeCab sys.dic)`);
+}
+
 function parseOutputModeFromArgs(args) {
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "-O" || args[i] === "--output" || args[i] === "--output-format-type") {
@@ -107,9 +191,14 @@ async function main() {
   try {
     const wasm = await loadWasm();
 
-    // Determine dictionary profile from args
-    const profile = parseEditionFromArgs(args);
-    await loadDictionary(wasm, profile, true);
+    // Load dictionary: from -d path if specified, otherwise from bundled
+    const dicdir = parseDicdirFromArgs(args);
+    if (dicdir) {
+      await loadDictionaryFromDicdir(wasm, dicdir);
+    } else {
+      const profile = parseEditionFromArgs(args);
+      await loadDictionary(wasm, profile, true);
+    }
 
     // Initialize CLI with args
     pushArgs(wasm, args);

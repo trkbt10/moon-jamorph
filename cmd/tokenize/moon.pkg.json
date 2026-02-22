@@ -9,6 +9,10 @@
       "path": "trkbt10/micado_mbt/src/types",
       "alias": "types"
     },
+    {
+      "path": "trkbt10/micado_mbt/src/core/mecab_dict",
+      "alias": "mecab_dict"
+    },
     "moonbitlang/core/env",
     "moonbitlang/core/buffer",
     "moonbitlang/core/encoding/utf8"

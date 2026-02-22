@@ -139,7 +139,7 @@ fn get_help_text() -> String {
     "Usage: micado [options] [text...]",
     "",
     "MeCab-compatible options:",
-    "  -d, --dicdir=DIR               dictionary directory (accepted, uses built-in)",
+    "  -d, --dicdir=DIR               dictionary directory (native only; WASM: use buffer API)",
     "  -O, --output-format-type=TYPE  output format: mecab(default) | wakati | none",
     "  -N, --nbest=INT                output N best results (default 1)",
     "  -p, --partial                  partial parsing mode",

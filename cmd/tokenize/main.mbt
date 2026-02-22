@@ -9,7 +9,7 @@ fn usage() -> Unit {
   println("options:")
   println("  -h, --help                   show this help and exit")
   println(
-    "  -d, --dicdir=DIR             accepted for compatibility (currently ignored)",
+    "  -d, --dicdir=DIR             load dictionary from DIR (native only)",
   )
   println(
     "  -O, --output-format-type=TYPE  mecab(default) | wakati | none | count(custom)",
@@ -132,10 +132,15 @@ fn main {
     usage()
     return
   }
-  let tokenizer = @tok.Tokenizer::new().set_edition(options.edition)
-  if options.dicdir is Some(_) {
-    // Parsed for MeCab CLI compatibility. Current tokenizer does not use external dicdir.
+  // Load dictionary from path if specified
+  if options.dicdir is Some(dicdir) {
+    let result = @mecab_dict.load_from_dicdir(dicdir)
+    if not(result.success) {
+      println("error: \{result.message}")
+      return
+    }
   }
+  let tokenizer = @tok.Tokenizer::new().set_edition(options.edition)
   let line_buf = @buffer.new(size_hint=256)
   let mut sentence_total = 0
   let mut token_total = 0
