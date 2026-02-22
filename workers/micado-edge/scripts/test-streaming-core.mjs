@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 
 import assert from "node:assert/strict";
-import { streamTokenize } from "../src/lib/streaming/engine.ts";
 import {
+  streamTokenize,
   consumeBlockTokens,
   dropConsumedTokens,
   mergePendingTokens,
-} from "../src/lib/streaming/pending-tokens.ts";
-import { createQuoteState, scanForBoundary } from "../src/lib/streaming/quote-boundary.ts";
+  createQuoteState,
+  scanForBoundary,
+} from "@trkbt10/micado-streaming";
 
 function makeTokens(parts, posDetail = "記号,一般") {
   let cursor = 0;
@@ -84,12 +85,11 @@ function testPendingTokens() {
 
 async function testEngine() {
   const text = "吾輩は「猫。」と言った。次の文。";
-  const runtime = {
+  const tokenizer = {
+    profile: "test",
     stats: {
-      profile: "test",
-      sourceMode: "test",
-      entryLimit: 0,
-      targetDeflateBytes: 0,
+      entryCount: 0,
+      bytes: 0,
     },
     tokenizeTSV(windowText) {
       return toTSV(windowText);
@@ -107,7 +107,7 @@ async function testEngine() {
       notifyWindow: true,
       includeText: true,
     },
-    runtime,
+    tokenizer,
     send: async (event, data) => {
       events.push({ event, data });
       return true;
@@ -131,12 +131,11 @@ async function testEngine() {
 
 async function testEngineParagraphBreak() {
   const text = "第一段\n\n\n第二段";
-  const runtime = {
+  const tokenizer = {
+    profile: "test",
     stats: {
-      profile: "test",
-      sourceMode: "test",
-      entryLimit: 0,
-      targetDeflateBytes: 0,
+      entryCount: 0,
+      bytes: 0,
     },
     tokenizeTSV(windowText) {
       return toTSV(windowText);
@@ -154,7 +153,7 @@ async function testEngineParagraphBreak() {
       notifyWindow: true,
       includeText: true,
     },
-    runtime,
+    tokenizer,
     send: async (event, data) => {
       events.push({ event, data });
       return true;
@@ -170,12 +169,11 @@ async function testEngineParagraphBreak() {
 
 async function testEngineDashParagraphBreak() {
   const text = "——\n\n次の行";
-  const runtime = {
+  const tokenizer = {
+    profile: "test",
     stats: {
-      profile: "test",
-      sourceMode: "test",
-      entryLimit: 0,
-      targetDeflateBytes: 0,
+      entryCount: 0,
+      bytes: 0,
     },
     tokenizeTSV(windowText) {
       return toTSV(windowText);
@@ -193,7 +191,7 @@ async function testEngineDashParagraphBreak() {
       notifyWindow: true,
       includeText: true,
     },
-    runtime,
+    tokenizer,
     send: async (event, data) => {
       events.push({ event, data });
       return true;

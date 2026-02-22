@@ -1,12 +1,17 @@
 import type {
   BlockReason,
   DetailedToken,
-  Runtime,
+  StreamBlockEvent,
+  StreamDoneEvent,
+  StreamEvent,
+  StreamMetaEvent,
   StreamOptions,
+  StreamWindowEvent,
   TokenFormat,
-} from "../../types.js";
-import { parseTokensFromTSV } from "../tokenize.js";
-import { normalizeBlockPayload } from "./payload.js";
+  TokenizerLike,
+} from "./types.js";
+import { parseTokensFromTSV } from "./parser.js";
+import { normalizeBlockPayload } from "./parser.js";
 import { createQuoteState, scanForBoundary } from "./quote-boundary.js";
 import {
   consumeBlockTokens,
@@ -41,15 +46,18 @@ export interface StreamTokenizeParams {
   text: string;
   format: TokenFormat;
   options: StreamOptions;
-  runtime: Runtime;
+  tokenizer: TokenizerLike;
   send: (event: string, payload: unknown) => Promise<boolean>;
 }
 
+/**
+ * Async streaming tokenization with callback-based event emission
+ */
 export async function streamTokenize({
   text,
   format,
   options,
-  runtime,
+  tokenizer,
   send,
 }: StreamTokenizeParams): Promise<void> {
   const pendingTokens: DetailedToken[] = [];
@@ -99,10 +107,7 @@ export async function streamTokenize({
   };
 
   const sentMeta = await send("meta", {
-    profile: runtime.stats.profile,
-    sourceMode: runtime.stats.sourceMode,
-    entryLimit: runtime.stats.entryLimit,
-    targetDeflateBytes: runtime.stats.targetDeflateBytes,
+    profile: tokenizer.profile,
     textLength: text.length,
     format,
     options,
@@ -114,7 +119,7 @@ export async function streamTokenize({
   while (windowStart < text.length) {
     const windowEnd = Math.min(text.length, windowStart + options.windowChars);
     const windowText = text.slice(windowStart, windowEnd);
-    const tsv = runtime.tokenizeTSV(windowText);
+    const tsv = tokenizer.tokenizeTSV(windowText);
     const windowTokens = toWindowTokens(tsv, windowStart);
     mergePendingTokens(pendingTokens, pendingTokenKeys, windowTokens, emitCursor);
     dropConsumedTokens(pendingTokens, pendingTokenKeys, emitCursor);
@@ -213,4 +218,171 @@ export async function streamTokenize({
     finalCursor: emitCursor,
     textLength: text.length,
   });
+}
+
+export interface GenerateTokenStreamParams {
+  text: string;
+  format: TokenFormat;
+  options: StreamOptions;
+  tokenizer: TokenizerLike;
+}
+
+/**
+ * Synchronous generator for token stream events
+ */
+export function* generateTokenStream({
+  text,
+  format,
+  options,
+  tokenizer,
+}: GenerateTokenStreamParams): Generator<StreamEvent, void, undefined> {
+  const pendingTokens: DetailedToken[] = [];
+  const pendingTokenKeys = new Set<string>();
+  const quoteState = createQuoteState();
+  const step = Math.max(1, options.windowChars - options.overlapChars);
+  let windowStart = 0;
+  let emitCursor = 0;
+  let scanCursor = 0;
+  let blockIndex = 0;
+  let windowIndex = 0;
+
+  // Emit meta event
+  const metaEvent: StreamMetaEvent = {
+    type: "meta",
+    profile: tokenizer.profile,
+    textLength: text.length,
+    format,
+    options,
+  };
+  yield metaEvent;
+
+  function* emitBlock(
+    boundary: number,
+    reason: BlockReason
+  ): Generator<StreamBlockEvent, boolean, undefined> {
+    if (boundary <= emitCursor) {
+      return false;
+    }
+    const start = emitCursor;
+    const end = boundary;
+    const blockText = text.slice(start, end);
+    const blockTokens = consumeBlockTokens(
+      pendingTokens,
+      pendingTokenKeys,
+      start,
+      end
+    );
+    const payload = normalizeBlockPayload(blockTokens, format);
+    const blockEvent: StreamBlockEvent = {
+      type: "block",
+      index: blockIndex,
+      reason,
+      start,
+      end,
+      charLength: end - start,
+      text: options.includeText ? blockText : undefined,
+      ...payload,
+    };
+    yield blockEvent;
+    emitCursor = end;
+    scanCursor = Math.max(scanCursor, emitCursor);
+    dropConsumedTokens(pendingTokens, pendingTokenKeys, emitCursor);
+    blockIndex += 1;
+    return true;
+  }
+
+  while (windowStart < text.length) {
+    const windowEnd = Math.min(text.length, windowStart + options.windowChars);
+    const windowText = text.slice(windowStart, windowEnd);
+    const tsv = tokenizer.tokenizeTSV(windowText);
+    const windowTokens = toWindowTokens(tsv, windowStart);
+    mergePendingTokens(pendingTokens, pendingTokenKeys, windowTokens, emitCursor);
+    dropConsumedTokens(pendingTokens, pendingTokenKeys, emitCursor);
+
+    const safeEnd =
+      windowEnd === text.length
+        ? text.length
+        : Math.max(emitCursor, windowEnd - options.overlapChars);
+    scanCursor = Math.max(scanCursor, emitCursor);
+    if (scanCursor > safeEnd) {
+      scanCursor = safeEnd;
+    }
+
+    if (options.notifyWindow) {
+      const windowEvent: StreamWindowEvent = {
+        type: "window",
+        index: windowIndex,
+        start: windowStart,
+        end: windowEnd,
+        safeEnd,
+        emitCursor,
+        scanCursor,
+        pendingTokenCount: pendingTokens.length,
+        tokenCount: windowTokens.length,
+      };
+      yield windowEvent;
+    }
+
+    while (true) {
+      scanCursor = Math.max(scanCursor, emitCursor);
+      if (scanCursor > safeEnd) {
+        scanCursor = safeEnd;
+      }
+      const { boundary, scannedTo, reason } = scanForBoundary(
+        pendingTokens,
+        scanCursor,
+        safeEnd,
+        quoteState,
+        text
+      );
+      scanCursor = Math.max(scanCursor, scannedTo);
+
+      if (boundary && boundary > emitCursor) {
+        yield* emitBlock(boundary, reason ?? "terminator");
+        continue;
+      }
+
+      const needForceFlush =
+        safeEnd > emitCursor &&
+        (safeEnd - emitCursor >= options.forceFlushChars ||
+          safeEnd === text.length);
+      if (needForceFlush) {
+        const forcedBoundary = findForcedBoundary(
+          pendingTokens,
+          emitCursor,
+          safeEnd
+        );
+        const forceReason: BlockReason =
+          safeEnd === text.length ? "eof" : "forced";
+        yield* emitBlock(forcedBoundary, forceReason);
+        continue;
+      }
+      break;
+    }
+
+    if (windowEnd >= text.length) {
+      break;
+    }
+    windowStart = nextWindowStart(
+      windowStart,
+      step,
+      emitCursor,
+      options.overlapChars,
+      text.length
+    );
+    windowIndex += 1;
+  }
+
+  if (emitCursor < text.length) {
+    yield* emitBlock(text.length, "eof");
+  }
+
+  const doneEvent: StreamDoneEvent = {
+    type: "done",
+    windows: windowIndex + 1,
+    blocks: blockIndex,
+    finalCursor: emitCursor,
+    textLength: text.length,
+  };
+  yield doneEvent;
 }

@@ -1,4 +1,4 @@
-import type { DetailedToken } from "../../types.js";
+import type { DetailedToken } from "./types.js";
 
 export function tokenKey(token: DetailedToken): string {
   return `${token.start_pos}:${token.end_pos}:${token.surface}:${token.pos_detail}`;

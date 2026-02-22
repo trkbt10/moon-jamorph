@@ -1,0 +1,33 @@
+{
+  "name": "@trkbt10/micado-streaming",
+  "version": "0.1.0",
+  "description": "Streaming tokenization utilities for micado",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "tokenizer",
+    "streaming",
+    "sse",
+    "web-streams"
+  ],
+  "author": "trkbt10",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.3.0"
+  }
+}

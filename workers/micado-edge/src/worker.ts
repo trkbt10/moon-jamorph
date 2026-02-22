@@ -1,4 +1,5 @@
-import type { Runtime, TokenFormat, StreamOptions } from "./types.js";
+import type { Runtime, TokenFormat } from "./types.js";
+import type { StreamOptions } from "./lib/streaming.js";
 import {
   htmlResponse,
   jsonResponse,
@@ -66,10 +67,12 @@ async function readTokenizeStreamInput(
 ): Promise<TokenizeStreamInput> {
   if (request.method === "GET") {
     const url = new URL(request.url);
+    const format = normalizeFormat(url.searchParams.get("format") ?? "compact");
     return {
       text: url.searchParams.get("text") ?? "",
-      format: normalizeFormat(url.searchParams.get("format") ?? "compact"),
+      format,
       options: normalizeStreamOptions({
+        format,
         windowChars: url.searchParams.get("windowChars") ?? undefined,
         overlapChars: url.searchParams.get("overlapChars") ?? undefined,
         forceFlushChars: url.searchParams.get("forceFlushChars") ?? undefined,
@@ -92,10 +95,11 @@ async function readTokenizeStreamInput(
       notifyWindow?: string | boolean;
       includeText?: string | boolean;
     };
+    const format = normalizeFormat(body?.format ?? "compact");
     return {
       text: String(body?.text ?? ""),
-      format: normalizeFormat(body?.format ?? "compact"),
-      options: normalizeStreamOptions(body ?? {}),
+      format,
+      options: normalizeStreamOptions({ ...body, format }),
     };
   }
   throw new Error("Only GET/POST are supported for /tokenize/stream");

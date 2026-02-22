@@ -1,4 +1,4 @@
-import type { BlockReason, DetailedToken, QuoteState, ScanResult } from "../../types.js";
+import type { BlockReason, DetailedToken, QuoteState, ScanResult } from "./types.js";
 
 const TERMINATOR_CHARS = new Set(["。", "！", "？", ".", "!", "?"]);
 const OPEN_TO_CLOSE = new Map([

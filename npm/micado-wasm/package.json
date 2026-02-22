@@ -1,16 +1,12 @@
 {
   "name": "@trkbt10/micado",
   "version": "0.2.0",
-  "description": "micado tokenizer: unified dic.bin runtime with profile-selectable dictionaries",
+  "description": "Japanese morphological analyzer with WASM runtime and streaming support",
   "type": "module",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
-    },
-    "./dic-bin": {
-      "types": "./dist/dic-bin.d.ts",
-      "import": "./dist/dic-bin.js"
     }
   },
   "types": "./dist/index.d.ts",
@@ -26,16 +22,25 @@
     "build": "tsc",
     "build:wasm": "../../tools/distribution/build_wasm_npm.sh",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint src test",
+    "lint:fix": "eslint src test --fix",
+    "test": "tsx --test test/**/*.test.ts",
     "test:smoke": "tsx ./demo/node-smoke.ts",
-    "test:dic": "tsx ./demo/node-dic-smoke.ts",
+    "test:streaming": "tsx ./demo/node-streaming.ts",
     "test:accuracy": "tsx ./demo/accuracy-cli.ts",
     "dev": "vite",
     "preview:demo": "vite --host --open"
   },
+  "dependencies": {
+    "@trkbt10/micado-streaming": "file:../../packages/micado-streaming"
+  },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^22.0.0",
+    "eslint": "^10.0.1",
     "tsx": "^4.7.0",
     "typescript": "^5.7.0",
+    "typescript-eslint": "^8.56.0",
     "vite": "^6.0.0"
   },
   "keywords": [
@@ -44,8 +49,7 @@
     "morphological-analysis",
     "moonbit",
     "wasm",
-    "dic-bin",
-    "deflate"
+    "streaming"
   ],
   "license": "Apache-2.0",
   "repository": {

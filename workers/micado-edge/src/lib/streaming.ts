@@ -1,15 +1,38 @@
-import type { Runtime, StreamOptions, TokenFormat } from "../types.js";
-import { streamTokenize } from "./streaming/engine.js";
-import { normalizeStreamOptions } from "./streaming/options.js";
-import { createSSEResponse, createSSEWriter } from "./sse.js";
+import type { Runtime, TokenFormat } from "../types.js";
+import {
+  streamTokenize,
+  normalizeStreamOptions,
+  createSSEResponse,
+  createSSEWriter,
+  type StreamOptions,
+  type StreamOptionsInput,
+  type TokenizerLike,
+} from "@trkbt10/micado-streaming";
 
 export { normalizeStreamOptions };
+export type { StreamOptions, StreamOptionsInput };
 
 export interface TokenizeStreamParams {
   text: string;
   format: TokenFormat;
   options: StreamOptions;
   runtime: Runtime;
+}
+
+/**
+ * Adapt Runtime to TokenizerLike interface
+ */
+function runtimeToTokenizerLike(runtime: Runtime): TokenizerLike {
+  return {
+    tokenizeTSV: (text: string) => runtime.tokenizeTSV(text),
+    profile: runtime.stats.profile,
+    stats: {
+      entryCount: runtime.stats.entryCount,
+      bytes: runtime.stats.dictionaryBytes,
+      maxSurfaceLength: runtime.stats.maxSurfaceLength,
+      connectionIdCount: runtime.stats.connectionIdCount,
+    },
+  };
 }
 
 export function createTokenizeStreamResponse({
@@ -22,18 +45,20 @@ export function createTokenizeStreamResponse({
   const writer = writable.getWriter();
   const sseWriter = createSSEWriter(writer);
 
+  const tokenizer = runtimeToTokenizerLike(runtime);
+
   (async () => {
     try {
       await streamTokenize({
         text,
         format,
         options,
-        runtime,
+        tokenizer,
         send: sseWriter.send,
       });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      await sseWriter.send("error", { message });
+      await sseWriter.send("error", { type: "error", message });
     } finally {
       await sseWriter.close();
     }

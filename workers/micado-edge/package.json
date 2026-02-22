@@ -16,6 +16,9 @@
     "test:sse:long-texts": "npm run prepare:worker && node ./scripts/test-sse-long-texts.mjs",
     "deploy": "npm run check:size && wrangler deploy"
   },
+  "dependencies": {
+    "@trkbt10/micado-streaming": "file:../../packages/micado-streaming"
+  },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.0.0",
     "tsx": "^4.7.0",

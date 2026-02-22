@@ -1,17 +1,7 @@
-import type { BinarySource } from "../types.js";
-
 /**
- * Normalize bytes to Uint8Array.
+ * Source types that can be loaded as binary data.
  */
-export function normalizeBytes(source: Uint8Array | ArrayBuffer): Uint8Array {
-  if (source instanceof Uint8Array) {
-    return source;
-  }
-  if (source instanceof ArrayBuffer) {
-    return new Uint8Array(source);
-  }
-  throw new Error("source must be Uint8Array or ArrayBuffer");
-}
+export type BinarySource = Uint8Array | ArrayBuffer | URL | string;
 
 /**
  * Load binary data from various sources.
