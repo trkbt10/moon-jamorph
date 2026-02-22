@@ -1,27 +1,48 @@
+# OS
 .DS_Store
+
+# MoonBit
 _build/
 target/
-target
 .mooncakes/
 .moonagent/
+
+# Python
 __pycache__/
+
+# Node.js / npm
+node_modules/
+*.tsbuildinfo
+
+# Temporary
 tmp/
 
-# docs
+# Docs (except specific READMEs)
 *.md
 !/README.md
 !/README.mbt.md
 !/npm/micado-wasm/README.md
 
-# external dictionary resources
+# Dictionary resources
 dic/
 tools/dict-compiler/.cache/
 
-# generated large dictionary sources
+# Generated dictionary sources
 src/dict/**/dict_*_generated.mbt
 
-# generated benchmark artifacts
+# Benchmark artifacts
 bench/benchmark/quick_compare_*.txt
 bench/benchmark/quick_compare_*.svg
 bench/benchmark/quick_compare_*.png
 !bench/benchmark/quick_compare_latest.svg
+
+# npm/micado-wasm build outputs
+npm/micado-wasm/dist/
+
+# packages/micado-streaming build outputs
+packages/micado-streaming/dist/
+
+# workers/micado-edge
+workers/micado-edge/.wrangler/
+workers/micado-edge/.cache/
+workers/micado-edge/src/generated/

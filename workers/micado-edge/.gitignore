@@ -1,8 +1,0 @@
-node_modules/
-.wrangler/
-.cache/
-
-src/generated/dictionary.dic.bin.deflate
-src/generated/micado_wasm.wasm
-src/generated/profile.mjs
-src/generated/manifest.json
