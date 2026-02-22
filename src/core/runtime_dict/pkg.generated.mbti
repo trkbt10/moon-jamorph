@@ -20,13 +20,27 @@ pub fn connection_id_to_index_or_missing(Int) -> Int
 
 pub fn entry_count() -> Int
 
+pub fn extract_reading_from_feature(String) -> String
+
+pub fn get_all_entries() -> Array[@types.RuntimeEntry]
+
+pub fn get_all_readings() -> Array[String]
+
+pub fn get_entries_by_reading(String) -> Array[Int]
+
+pub fn get_entry(Int) -> @types.DictEntry?
+
 pub fn is_ready() -> Bool
+
+pub fn katakana_to_hiragana(String) -> String
 
 pub fn last_error() -> String
 
 pub fn load_dic_bin(BytesView) -> Bool
 
 pub fn max_surface_length() -> Int
+
+pub fn merge_dic_bin(BytesView) -> Bool
 
 pub fn noun_connection_index() -> Int
 
@@ -39,3 +53,4 @@ pub fn unknown_connection_index() -> Int
 // Type aliases
 
 // Traits
+

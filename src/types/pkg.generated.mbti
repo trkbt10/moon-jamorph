@@ -19,6 +19,13 @@ pub(all) enum CharClass {
 pub impl Eq for CharClass
 pub impl Show for CharClass
 
+pub(all) struct ContextMorpheme {
+  surface : String
+  reading : String
+  pos : String
+  connection_id : Int
+}
+
 pub(all) struct DictEntry {
   surface : String
   pos : POS
@@ -80,6 +87,23 @@ pub(all) struct ParseOptions {
   constraint : ParseConstraint
 }
 pub fn ParseOptions::default() -> Self
+
+pub(all) struct ReadingCandidate {
+  surface : String
+  reading : String
+  pos : String
+  pos_detail : String
+  cost : Int
+  connection_id : Int
+}
+
+pub(all) struct RuntimeEntry {
+  surface : String
+  left_id : Int
+  right_id : Int
+  word_cost : Int
+  feature : String
+}
 
 pub(all) struct SpanConstraint {
   start_pos : Int

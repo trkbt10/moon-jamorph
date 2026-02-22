@@ -47,6 +47,12 @@ let runtime_unknown_connection_index : Ref[Int] = @ref.new(-1)
 let runtime_last_error : Ref[String] = @ref.new("")
 
 ///|
+/// Reading index: hiragana reading -> array of entry indices
+let runtime_reading_index : Ref[@hashmap.HashMap[String, Array[Int]]] = @ref.new(
+  @hashmap.new(),
+)
+
+///|
 fn clear_runtime_state() -> Unit {
   runtime_ready.val = false
   runtime_entries.val = []
@@ -60,6 +66,7 @@ fn clear_runtime_state() -> Unit {
   runtime_bos_connection_index.val = -1
   runtime_noun_connection_index.val = -1
   runtime_unknown_connection_index.val = -1
+  runtime_reading_index.val = @hashmap.new()
 }
 
 ///|
@@ -235,6 +242,73 @@ fn build_surface_index(
 }
 
 ///|
+/// Extract reading from MeCab feature string (field index 7)
+/// Format: pos1,pos2,pos3,pos4,cType,cForm,base,reading,pronunciation
+pub fn extract_reading_from_feature(feature : String) -> String {
+  let mut field_index = 0
+  let mut start = 0
+  for i, ch in feature {
+    if ch == ',' {
+      if field_index == 7 {
+        let reading = feature[start:i].to_string() catch { _ => "" }
+        if reading != "*" && reading.length() > 0 {
+          return reading
+        }
+        return ""
+      }
+      field_index = field_index + 1
+      start = i + 1
+    }
+  }
+  // Handle last field (index 7 or 8)
+  if field_index == 7 {
+    let reading = feature[start:].to_string() catch { _ => "" }
+    if reading != "*" && reading.length() > 0 {
+      return reading
+    }
+  }
+  ""
+}
+
+///|
+/// Convert katakana to hiragana for reading index
+/// Katakana: U+30A1-U+30F6, Hiragana: U+3041-U+3096 (offset: 0x60)
+pub fn katakana_to_hiragana(s : String) -> String {
+  let chars = s.to_array()
+  let buf = StringBuilder::new(size_hint=chars.length())
+  for ch in chars {
+    let cp = ch.to_int()
+    if cp >= 0x30A1 && cp <= 0x30F6 {
+      buf.write_char((cp - 0x60).unsafe_to_char())
+    } else {
+      buf.write_char(ch)
+    }
+  }
+  buf.to_string()
+}
+
+///|
+/// Build reading index from entries
+fn build_reading_index(
+  entries : Array[@types.DictEntry],
+) -> @hashmap.HashMap[String, Array[Int]] {
+  let index : @hashmap.HashMap[String, Array[Int]] = @hashmap.new(
+    capacity=entries.length(),
+  )
+  for i in 0..<entries.length() {
+    let reading = extract_reading_from_feature(entries[i].mecab_feature)
+    if reading.length() > 0 {
+      let hiragana = katakana_to_hiragana(reading)
+      match index.get(hiragana) {
+        Some(bucket) => bucket.push(i)
+        None => index.set(hiragana, [i])
+      }
+    }
+  }
+  index
+}
+
+///|
 fn connection_index_or_missing_from_map(
   id_to_index : @hashmap.HashMap[Int, Int],
   raw_id : Int,
@@ -386,9 +460,11 @@ fn parse_and_set_runtime(bytes : BytesView) -> Bool {
   }
   remap_entry_connection_ids(entries, id_to_index)
   let (surface_index, max_surface_len) = build_surface_index(entries)
+  let reading_index = build_reading_index(entries)
   runtime_entries.val = entries
   runtime_surface_index.val = surface_index
   runtime_max_surface_len.val = max_surface_len
+  runtime_reading_index.val = reading_index
   runtime_connection_ids.val = ids
   runtime_connection_id_to_index.val = id_to_index
   runtime_connection_costs.val = costs
@@ -797,6 +873,19 @@ pub fn merge_dic_bin(bytes : BytesView) -> Bool {
     }
   }
 
+  // Update reading index with new entries
+  for i in existing_entry_count..<runtime_entries.val.length() {
+    let entry = runtime_entries.val[i]
+    let reading = extract_reading_from_feature(entry.mecab_feature)
+    if reading.length() > 0 {
+      let hiragana = katakana_to_hiragana(reading)
+      match runtime_reading_index.val.get(hiragana) {
+        Some(bucket) => bucket.push(i)
+        None => runtime_reading_index.val.set(hiragana, [i])
+      }
+    }
+  }
+
   // Step 6: Update global state
   runtime_connection_ids.val = unified_ids
   runtime_connection_id_to_index.val = unified_id_to_index
@@ -819,4 +908,57 @@ pub fn merge_dic_bin(bytes : BytesView) -> Bool {
 
   runtime_last_error.val = ""
   true
+}
+
+///|
+/// Get a single entry by index (for IME module access)
+pub fn get_entry(index : Int) -> @types.DictEntry? {
+  if !runtime_ready.val {
+    return None
+  }
+  if index < 0 || index >= runtime_entries.val.length() {
+    return None
+  }
+  Some(runtime_entries.val[index])
+}
+
+///|
+/// Get all dictionary entries as RuntimeEntry array (for custom indexing)
+pub fn get_all_entries() -> Array[@types.RuntimeEntry] {
+  if !runtime_ready.val {
+    return []
+  }
+  let entries = runtime_entries.val
+  let result : Array[@types.RuntimeEntry] = Array::new(capacity=entries.length())
+  for entry in entries {
+    result.push({
+      surface: entry.surface,
+      left_id: entry.left_id,
+      right_id: entry.right_id,
+      word_cost: entry.word_cost,
+      feature: entry.mecab_feature,
+    })
+  }
+  result
+}
+
+///|
+/// Get entry indices by hiragana reading (for IME lookup)
+pub fn get_entries_by_reading(reading : String) -> Array[Int] {
+  if !runtime_ready.val {
+    return []
+  }
+  match runtime_reading_index.val.get(reading) {
+    Some(indices) => indices.copy()
+    None => []
+  }
+}
+
+///|
+/// Get all readings in the index (for prefix search)
+pub fn get_all_readings() -> Array[String] {
+  if !runtime_ready.val {
+    return []
+  }
+  runtime_reading_index.val.keys().collect()
 }

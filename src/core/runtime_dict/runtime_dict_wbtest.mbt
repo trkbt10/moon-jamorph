@@ -312,3 +312,193 @@ test "merge_dic_bin preserves base dictionary costs for overlapping IDs" {
   inspect(connection_cost_by_index(0, 1), content="111") // NOT 999
   inspect(connection_cost_by_index(1, 0), content="222") // NOT 888
 }
+
+///|
+test "extract_reading_from_feature extracts field 7" {
+  // Standard 9-field MeCab feature
+  let feature = "名詞,固有名詞,地域,一般,*,*,東京,トウキョウ,トーキョー"
+  inspect(extract_reading_from_feature(feature), content="トウキョウ")
+}
+
+///|
+test "extract_reading_from_feature returns empty for star reading" {
+  let feature = "名詞,一般,*,*,*,*,猫,*,*"
+  inspect(extract_reading_from_feature(feature), content="")
+}
+
+///|
+test "extract_reading_from_feature returns empty for short feature" {
+  // Feature with only 6 fields (no reading)
+  let feature = "名詞,一般,*,*,*,*"
+  inspect(extract_reading_from_feature(feature), content="")
+}
+
+///|
+test "extract_reading_from_feature handles empty string" {
+  inspect(extract_reading_from_feature(""), content="")
+}
+
+///|
+test "katakana_to_hiragana converts standard katakana" {
+  inspect(katakana_to_hiragana("トウキョウ"), content="とうきょう")
+  inspect(katakana_to_hiragana("ネコ"), content="ねこ")
+  inspect(katakana_to_hiragana("カタカナ"), content="かたかな")
+}
+
+///|
+test "katakana_to_hiragana preserves hiragana" {
+  inspect(katakana_to_hiragana("ひらがな"), content="ひらがな")
+}
+
+///|
+test "katakana_to_hiragana preserves special marks" {
+  // Prolonged sound mark (ー) and middle dot (・) pass through
+  inspect(katakana_to_hiragana("トーキョー"), content="とーきょー")
+  inspect(katakana_to_hiragana("コーヒー"), content="こーひー")
+}
+
+///|
+test "katakana_to_hiragana handles mixed input" {
+  inspect(katakana_to_hiragana("カタひらKanji漢字"), content="かたひらKanji漢字")
+}
+
+///|
+test "load_dic_bin builds reading index" {
+  clear_runtime_state()
+
+  // Dictionary with reading in field 7
+  let dic = build_test_dic_bin(
+    [
+      ("東京", "名詞,固有名詞,地域,一般,*,*,東京,トウキョウ,トーキョー", 1, 1, 5000),
+      ("猫", "名詞,一般,*,*,*,*,猫,ネコ,ネコ", 1, 1, 3000),
+    ],
+    [0, 1],
+    [0, 100, 100, 0],
+    10000,
+  )
+  let ok = load_dic_bin(dic[:])
+  inspect(ok, content="true")
+
+  // Reading index should be built (hiragana keys)
+  let tokyo_entries = get_entries_by_reading("とうきょう")
+  inspect(tokyo_entries.length(), content="1")
+
+  let neko_entries = get_entries_by_reading("ねこ")
+  inspect(neko_entries.length(), content="1")
+
+  // Non-existent reading
+  let none_entries = get_entries_by_reading("そんざいしない")
+  inspect(none_entries.length(), content="0")
+}
+
+///|
+test "merge_dic_bin updates reading index" {
+  clear_runtime_state()
+
+  // Base dictionary
+  let base_dic = build_test_dic_bin(
+    [("猫", "名詞,一般,*,*,*,*,猫,ネコ,ネコ", 1, 1, 3000)],
+    [0, 1],
+    [0, 100, 100, 0],
+    10000,
+  )
+  let base_ok = load_dic_bin(base_dic[:])
+  inspect(base_ok, content="true")
+  inspect(get_entries_by_reading("ねこ").length(), content="1")
+
+  // Additional dictionary
+  let add_dic = build_test_dic_bin(
+    [("犬", "名詞,一般,*,*,*,*,犬,イヌ,イヌ", 1, 1, 2000)],
+    [0, 1],
+    [0, 100, 100, 0],
+    10000,
+  )
+  let merge_ok = merge_dic_bin(add_dic[:])
+  inspect(merge_ok, content="true")
+
+  // Both readings should be indexed
+  inspect(get_entries_by_reading("ねこ").length(), content="1")
+  inspect(get_entries_by_reading("いぬ").length(), content="1")
+}
+
+///|
+test "get_entry returns entry by index" {
+  clear_runtime_state()
+
+  let dic = build_test_dic_bin(
+    [
+      ("猫", "名詞,一般,*,*,*,*,猫,ネコ,ネコ", 1, 1, 3000),
+      ("犬", "名詞,一般,*,*,*,*,犬,イヌ,イヌ", 1, 1, 2000),
+    ],
+    [0, 1],
+    [0, 100, 100, 0],
+    10000,
+  )
+  let ok = load_dic_bin(dic[:])
+  inspect(ok, content="true")
+
+  match get_entry(0) {
+    Some(e) => inspect(e.surface, content="猫")
+    None => inspect(false, content="true")
+  }
+
+  match get_entry(1) {
+    Some(e) => inspect(e.surface, content="犬")
+    None => inspect(false, content="true")
+  }
+
+  // Out of bounds
+  match get_entry(99) {
+    Some(_) => inspect(false, content="true")
+    None => inspect(true, content="true")
+  }
+}
+
+///|
+test "get_all_entries returns all entries as RuntimeEntry" {
+  clear_runtime_state()
+
+  let dic = build_test_dic_bin(
+    [
+      ("猫", "名詞,一般,*,*,*,*,猫,ネコ,ネコ", 1, 1, 3000),
+      ("犬", "名詞,一般,*,*,*,*,犬,イヌ,イヌ", 2, 2, 2000),
+    ],
+    [0, 1, 2],
+    [0, 100, 100, 100, 0, 100, 100, 100, 0],
+    10000,
+  )
+  let ok = load_dic_bin(dic[:])
+  inspect(ok, content="true")
+
+  let entries = get_all_entries()
+  inspect(entries.length(), content="2")
+  inspect(entries[0].surface, content="猫")
+  inspect(entries[0].word_cost, content="3000")
+  inspect(entries[1].surface, content="犬")
+  inspect(entries[1].word_cost, content="2000")
+}
+
+///|
+test "get_all_readings returns all indexed readings" {
+  clear_runtime_state()
+
+  let dic = build_test_dic_bin(
+    [
+      ("猫", "名詞,一般,*,*,*,*,猫,ネコ,ネコ", 1, 1, 3000),
+      ("犬", "名詞,一般,*,*,*,*,犬,イヌ,イヌ", 1, 1, 2000),
+      ("鳥", "名詞,一般,*,*,*,*,鳥,トリ,トリ", 1, 1, 4000),
+    ],
+    [0, 1],
+    [0, 100, 100, 0],
+    10000,
+  )
+  let ok = load_dic_bin(dic[:])
+  inspect(ok, content="true")
+
+  let readings = get_all_readings()
+  inspect(readings.length(), content="3")
+  // Readings should be in hiragana
+  inspect(readings.contains("ねこ"), content="true")
+  inspect(readings.contains("いぬ"), content="true")
+  inspect(readings.contains("とり"), content="true")
+}

@@ -121,6 +121,36 @@ pub(all) struct NBestResult {
 }
 
 ///|
+/// Exported dictionary entry for custom indexing (IME use)
+pub(all) struct RuntimeEntry {
+  surface : String
+  left_id : Int
+  right_id : Int
+  word_cost : Int
+  feature : String
+}
+
+///|
+/// IME candidate for reading-based lookup
+pub(all) struct ReadingCandidate {
+  surface : String
+  reading : String
+  pos : String
+  pos_detail : String
+  cost : Int
+  connection_id : Int
+}
+
+///|
+/// Morpheme with context info for ML reranking
+pub(all) struct ContextMorpheme {
+  surface : String
+  reading : String
+  pos : String
+  connection_id : Int
+}
+
+///|
 pub fn chars_slice(chars : Array[Char], start : Int, end : Int) -> String {
   let b = StringBuilder::new(size_hint=end - start)
   for i in start..<end {
